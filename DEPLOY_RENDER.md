@@ -22,6 +22,7 @@ Expected config:
 - Runtime: node
 - Build command: npm install
 - Start command: npm run web
+- Health check path: /health
 
 ## 3) Add environment variables in Render
 
@@ -52,6 +53,7 @@ If you have a custom domain, replace APP_BASE_URL, ALLOWED_ORIGINS, STRIPE_SUCCE
 3. Open:
    - https://YOUR-RENDER-DOMAIN.onrender.com/health
    - Expected response: {"ok":true}
+4. If the service shows 503, open the Render logs and confirm PORT=10000 is set.
 
 ## 5) Functional checks
 

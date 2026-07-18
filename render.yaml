@@ -3,8 +3,11 @@ services:
     name: speeddash-pro
     runtime: node
     plan: free
+    healthCheckPath: /health
     buildCommand: npm install
     startCommand: npm run web
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 10000

@@ -62,6 +62,32 @@
           "type": "image/svg+xml"
         }
       ]
+    },
+    {
+      "name": "Поделиться результатом",
+      "short_name": "Поделиться",
+      "description": "Быстро отправить результат проверки",
+      "url": "./index.html?action=share",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect fill='%2310b981' width='96' height='96' rx='20'/><text x='50%' y='50%' font-size='46' font-weight='bold' fill='white' text-anchor='middle' dominant-baseline='central'>🔗</text></svg>",
+          "sizes": "96x96",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "Поддержать проект",
+      "short_name": "Поддержка",
+      "description": "Открыть окно пожертвований",
+      "url": "./index.html?action=donate",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect fill='%23764ba2' width='96' height='96' rx='20'/><text x='50%' y='50%' font-size='46' font-weight='bold' fill='white' text-anchor='middle' dominant-baseline='central'>💝</text></svg>",
+          "sizes": "96x96",
+          "type": "image/svg+xml"
+        }
+      ]
     }
   ],
   "share_target": {

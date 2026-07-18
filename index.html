@@ -30,6 +30,22 @@
             --glass-bg: rgba(255, 255, 255, 0.1);
         }
 
+        /* Оптимизация отклика для тач-устройств и плавных кликов */
+        button,
+        .sidebar-item,
+        .theme-btn,
+        .payment-option,
+        .menu-btn,
+        .header-btn,
+        .close-btn,
+        .sidebar-close {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            transform: translateZ(0);
+            backface-visibility: hidden;
+        }
+
         body {
             font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -57,18 +73,6 @@
             color: #f0f4f8;
         }
 
-        body.ocean-theme {
-            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-        }
-
-        body.sunset-theme {
-            background: linear-gradient(135deg, #f97316 0%, #dc2626 100%);
-        }
-
-        body.forest-theme {
-            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-        }
-
         .sidebar {
             position: fixed;
             left: -320px;
@@ -78,11 +82,24 @@
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(20px);
             box-shadow: 5px 0 30px rgba(0,0,0,0.2);
-            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
             z-index: 999;
             overflow-y: auto;
             padding: 20px;
             border-right: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(102, 126, 234, 0.35);
+            border-radius: 999px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: transparent;
         }
 
         body.dark-mode .sidebar {
@@ -92,6 +109,33 @@
 
         .sidebar.active {
             left: 0;
+            box-shadow: 12px 0 40px rgba(15, 23, 42, 0.35);
+        }
+
+        .sidebar-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.36);
+            backdrop-filter: blur(2px);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.25s ease, visibility 0.25s ease;
+            z-index: 998;
+        }
+
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        body.sidebar-open {
+            overflow: hidden;
+        }
+
+        body.sidebar-open .menu-btn {
+            background: rgba(255,255,255,0.35);
+            border-color: rgba(255,255,255,0.6);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
         }
 
         .sidebar-header {
@@ -118,6 +162,15 @@
 
         .sidebar-section {
             margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.45);
+            border: 1px solid rgba(102, 126, 234, 0.16);
+            border-radius: 14px;
+            padding: 12px;
+        }
+
+        body.dark-mode .sidebar-section {
+            background: rgba(51, 65, 85, 0.35);
+            border-color: rgba(148, 163, 184, 0.2);
         }
 
         .sidebar-title {
@@ -146,6 +199,18 @@
             transform: translateX(5px);
         }
 
+        .sidebar-item.active {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.18) 100%);
+            border-left-color: #667eea;
+            color: #334155;
+            transform: translateX(4px);
+        }
+
+        body.dark-mode .sidebar-item.active {
+            color: #f8fafc;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.24) 0%, rgba(59, 130, 246, 0.18) 100%);
+        }
+
         .theme-selector {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -164,9 +229,6 @@
 
         .theme-btn.light { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
         .theme-btn.dark { background: linear-gradient(135deg, #1e293b 0%, #475569 100%); color: white; }
-        .theme-btn.ocean { background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: white; }
-        .theme-btn.sunset { background: linear-gradient(135deg, #f97316 0%, #dc2626 100%); color: white; }
-
         .theme-btn.active {
             border-color: rgba(0,0,0,0.3);
             box-shadow: 0 8px 20px rgba(0,0,0,0.2);
@@ -255,6 +317,24 @@
             box-shadow: 0 8px 20px rgba(0,0,0,0.15);
         }
 
+        .lang-main-btn {
+            min-width: 52px;
+            padding: 10px 10px;
+            font-size: 12px;
+            letter-spacing: 0.3px;
+        }
+
+        .theme-main-btn {
+            min-width: 68px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        .lang-main-btn.active {
+            background: rgba(255,255,255,0.35);
+            border-color: rgba(255,255,255,0.6);
+        }
+
         .main-container {
             max-width: 1400px;
             margin: 0 auto;
@@ -263,14 +343,185 @@
             gap: 24px;
             position: relative;
             z-index: 10;
+            padding: 22px;
+            border-radius: 30px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.1) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            box-shadow: 0 20px 60px rgba(15, 23, 42, 0.14);
+            backdrop-filter: blur(8px);
+        }
+
+        body.dark-mode .main-container {
+            background: linear-gradient(135deg, rgba(2, 6, 23, 0.5) 0%, rgba(15, 23, 42, 0.34) 100%);
+            border-color: rgba(148, 163, 184, 0.22);
+            box-shadow: 0 26px 70px rgba(2, 6, 23, 0.45);
+        }
+
+        .site-footer {
+            max-width: 1400px;
+            margin: 18px auto 0;
+            padding: 0 4px 6px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .site-footer-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 14px 16px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.24);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+            flex-wrap: wrap;
+        }
+
+        body.dark-mode .site-footer-row {
+            background: rgba(15, 23, 42, 0.34);
+            border-color: rgba(148, 163, 184, 0.16);
+            box-shadow: 0 18px 42px rgba(2, 6, 23, 0.24);
+        }
+
+        .network-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            color: white;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            backdrop-filter: blur(10px);
+            transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+        }
+
+        .network-status:hover {
+            transform: translateY(-1px);
+        }
+
+        .network-status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            background: #10b981;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.18);
+            flex-shrink: 0;
+        }
+
+        body.offline-mode .network-status {
+            background: rgba(239, 68, 68, 0.18);
+            border-color: rgba(248, 113, 113, 0.4);
+        }
+
+        body.offline-mode .network-status-dot {
+            background: #ef4444;
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.18);
+        }
+
+        .site-footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            justify-content: center;
+            flex: 1;
+        }
+
+        .site-footer-link {
+            background: none;
+            border: none;
+            color: inherit;
+            font: inherit;
+            padding: 0;
+            cursor: pointer;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+            font-weight: 700;
+        }
+
+        .site-footer-link:hover {
+            opacity: 0.86;
+        }
+
+        .site-footer-copy {
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        body.dark-mode .site-footer-copy {
+            color: rgba(248, 250, 252, 0.95);
+        }
+
+        @media (max-width: 900px) {
+            .network-status span:last-child {
+                display: none;
+            }
+
+            .site-footer-row {
+                justify-content: center;
+                text-align: center;
+            }
+
+            .site-footer-copy {
+                white-space: normal;
+            }
+        }
+
+        @media (max-width: 560px) {
+            .site-footer {
+                margin-top: 14px;
+                padding: 0 0 4px;
+            }
+
+            .site-footer-row {
+                padding: 12px 12px 11px;
+                gap: 10px;
+                border-radius: 16px;
+            }
+
+            .network-status {
+                padding: 9px 10px;
+                font-size: 11px;
+            }
+
+            .site-footer-links {
+                gap: 8px;
+            }
+
+            .site-footer-copy {
+                font-size: 11px;
+                line-height: 1.35;
+            }
         }
 
         @media (max-width: 1200px) {
-            .main-container { grid-template-columns: 1fr 1fr; gap: 20px; }
+            .main-container {
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+                padding: 18px;
+            }
         }
 
         @media (max-width: 768px) {
-            .main-container { grid-template-columns: 1fr; gap: 16px; }
+            .main-container {
+                grid-template-columns: 1fr;
+                gap: 16px;
+                padding: 14px;
+                border-radius: 22px;
+            }
+
+            .lang-main-btn {
+                min-width: 44px;
+                padding: 9px 8px;
+            }
         }
 
         .card {
@@ -414,17 +665,30 @@
             position: absolute;
             top: 50%;
             left: 50%;
-            width: 0;
-            height: 0;
+            width: 220px;
+            height: 220px;
             border-radius: 50%;
             background: rgba(255,255,255,0.5);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 0;
+            transition: transform 0.45s ease, opacity 0.45s ease;
+            pointer-events: none;
         }
 
         button:active::before {
-            width: 300px;
-            height: 300px;
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 0.35;
+        }
+
+        button:active,
+        .menu-btn:active,
+        .header-btn:active,
+        .sidebar-item:active,
+        .theme-btn:active,
+        .payment-option:active,
+        .close-btn:active,
+        .sidebar-close:active {
+            transform: translateY(1px) scale(0.99) translateZ(0);
         }
 
         .start-btn {
@@ -956,40 +1220,33 @@
             color: #999;
         }
 
+        .payment-option.payment-unavailable {
+            opacity: 0.78;
+            filter: grayscale(0.2);
+            cursor: not-allowed;
+        }
+
+        .payment-option.payment-unavailable:hover {
+            border-color: transparent;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .payment-beta-tag {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 2px 8px;
+            font-size: 10px;
+            font-weight: 800;
+            border-radius: 999px;
+            color: white;
+            background: linear-gradient(135deg, #f97316 0%, #dc2626 100%);
+            letter-spacing: 0.5px;
+        }
+
         body.dark-mode .payment-option:not(.selected) .payment-desc {
             color: #cbd5e1;
-        }
-
-        .amount-selector {
-            margin: 20px 0;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .amount-btn {
-            padding: 10px 18px;
-            border: 2px solid #e0e0e0;
-            background: white;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            font-size: 13px;
-        }
-
-        body.dark-mode .amount-btn {
-            background: #334155;
-            border-color: #475569;
-            color: #f0f4f8;
-        }
-
-        .amount-btn.selected {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-color: #667eea;
-            transform: scale(1.05);
         }
 
         .confetti {
@@ -1119,43 +1376,46 @@
             from { opacity: 0; transform: translateX(-30px); }
             to { opacity: 1; transform: translateX(0); }
         }
+
     </style>
 </head>
 <body>
     <!-- Сайдбар -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <h3>⚙️ Меню</h3>
+            <div>
+                <h3 id="sidebarMenuTitle">⚙️ Меню</h3>
+                <p id="sidebarHint" style="font-size: 12px; opacity: 0.75; margin-top: 4px;">Быстрые действия и настройки</p>
+            </div>
             <button class="sidebar-close" onclick="toggleSidebar()">✕</button>
         </div>
 
         <div class="sidebar-section">
-            <div class="sidebar-title">🎨 Тема</div>
+            <div class="sidebar-title" id="sidebarThemeTitle">🎨 Тема</div>
             <div class="theme-selector">
-                <button class="theme-btn light active" onclick="setTheme('light')" title="Светлая">Светлая</button>
-                <button class="theme-btn dark" onclick="setTheme('dark')" title="Темная">Темная</button>
-                <button class="theme-btn ocean" onclick="setTheme('ocean')" title="Океан">Океан</button>
-                <button class="theme-btn sunset" onclick="setTheme('sunset')" title="Закат">Закат</button>
+                <button class="theme-btn light active" id="themeLightBtn" onclick="setTheme('light')" title="Светлая">Светлая</button>
+                <button class="theme-btn dark" id="themeDarkBtn" onclick="setTheme('dark')" title="Темная">Темная</button>
             </div>
         </div>
 
         <div class="sidebar-section">
-            <div class="sidebar-title">📊 Быстрые ссылки</div>
-            <div class="sidebar-item" onclick="openStats()">📈 Статистика</div>
-            <div class="sidebar-item" onclick="openHistory()">📅 История</div>
-            <div class="sidebar-item" onclick="openCompare()">⚖️ Сравнение</div>
-            <div class="sidebar-item" onclick="shareResults()">🔗 Поделиться результатом</div>
-            <div class="sidebar-item" onclick="installPwa()">📱 Установить приложение</div>
-            <div class="sidebar-item" onclick="openSchedule()">⏰ Расписание</div>
-            <div class="sidebar-item" onclick="openAbout()">ℹ️ О сайте</div>
+            <div class="sidebar-title" id="sidebarQuickLinksTitle">📊 Быстрые ссылки</div>
+            <div class="sidebar-item" id="quickStatsLink" onclick="openStats()">📈 Статистика</div>
+            <div class="sidebar-item" id="quickHistoryLink" onclick="openHistory()">📅 История</div>
+            <div class="sidebar-item" id="quickCompareLink" onclick="openCompare()">⚖️ Сравнение</div>
+            <div class="sidebar-item" id="quickShareLink" onclick="shareResults()">🔗 Поделиться результатом</div>
+            <div class="sidebar-item" id="quickInstallLink" onclick="installPwa()">📱 Установить приложение</div>
+            <div class="sidebar-item" id="quickScheduleLink" onclick="openSchedule()">⏰ Расписание</div>
+            <div class="sidebar-item" id="quickAboutLink" onclick="openAbout()">ℹ️ О сайте</div>
         </div>
 
         <div class="sidebar-section">
-            <div class="sidebar-title">💾 Данные</div>
-            <div class="sidebar-item" onclick="exportResults()">📥 Экспорт CSV</div>
-            <div class="sidebar-item" onclick="clearHistory()">🗑️ Очистить историю</div>
+            <div class="sidebar-title" id="sidebarDataTitle">💾 Данные</div>
+            <div class="sidebar-item" id="exportCsvLink" onclick="exportResults()">📥 Экспорт CSV</div>
+            <div class="sidebar-item" id="clearHistoryLink" onclick="clearHistory()">🗑️ Очистить историю</div>
         </div>
     </div>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
     <!-- Заголовок -->
     <div class="header">
@@ -1163,9 +1423,12 @@
             <span>⚡</span> SpeedDash Pro
         </div>
         <div class="header-actions">
-            <button class="header-btn" onclick="shareResults()">🔗 Поделиться</button>
+            <button class="header-btn lang-main-btn active" id="mainLangRuBtn" onclick="setMainLanguage('ru')">RU</button>
+            <button class="header-btn lang-main-btn" id="mainLangEnBtn" onclick="setMainLanguage('en')">EN</button>
+            <button class="header-btn theme-main-btn" id="themeToggleBtn" onclick="toggleContrastTheme()" title="Черный/белый фон" aria-label="Черный или белый фон">⚫⚪</button>
+            <button class="header-btn" id="shareBtn" onclick="shareResults()">🔗 Поделиться</button>
             <button class="header-btn" id="installBtn" onclick="installPwa()" style="display: none;">📱 Установить</button>
-            <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+            <button class="menu-btn" id="menuBtn" onclick="toggleSidebar()" aria-label="Open menu" aria-expanded="false">☰</button>
         </div>
     </div>
 
@@ -1173,8 +1436,8 @@
     <div class="main-container">
         <!-- Левая колонка - Тест -->
         <div class="card">
-            <h1>⚡ Проверка Скорости</h1>
-            <p class="subtitle">Проверьте вашу скорость интернета</p>
+            <h1 id="mainTitle">⚡ Проверка Скорости</h1>
+            <p class="subtitle" id="mainSubtitle">Проверьте вашу скорость интернета</p>
             
             <div class="status" id="status">
                 Готово к тестированию
@@ -1192,19 +1455,19 @@
             <div class="results">
                 <div class="result-card">
                     <div class="result-icon">📡</div>
-                    <div class="result-label">Пинг</div>
+                    <div class="result-label" id="labelPing">Пинг</div>
                     <div class="result-value" id="ping">—</div>
-                    <div class="result-unit">мс</div>
+                    <div class="result-unit" id="unitPing">мс</div>
                 </div>
                 <div class="result-card">
                     <div class="result-icon">⬇️</div>
-                    <div class="result-label">Загрузка</div>
+                    <div class="result-label" id="labelDownload">Загрузка</div>
                     <div class="result-value" id="download">—</div>
                     <div class="result-unit">Mbps</div>
                 </div>
                 <div class="result-card">
                     <div class="result-icon">⬆️</div>
-                    <div class="result-label">Выгрузка</div>
+                    <div class="result-label" id="labelUpload">Выгрузка</div>
                     <div class="result-value" id="upload">—</div>
                     <div class="result-unit">Mbps</div>
                 </div>
@@ -1213,41 +1476,41 @@
             <div class="quality-info" id="qualityInfo" style="display: none;">
                 <div id="ratingBadge"></div>
                 <div class="quality-item">
-                    <span class="quality-label">Качество:</span>
+                    <span class="quality-label" id="qualityLabel">Качество:</span>
                     <span class="quality-value" id="quality">—</span>
                 </div>
                 <div class="quality-item">
-                    <span class="quality-label">Для:</span>
+                    <span class="quality-label" id="forLabel">Для:</span>
                     <span class="quality-value" id="recommendation">—</span>
                 </div>
                 <div class="quality-item">
-                    <span class="quality-label">Время:</span>
+                    <span class="quality-label" id="timeLabel">Время:</span>
                     <span class="quality-value" id="timestamp">—</span>
                 </div>
             </div>
 
             <div class="button-group" style="margin-top: 20px;">
-                <button class="history-btn" onclick="openHistory()">📊 История</button>
-                <button class="stats-btn" onclick="openStats()">📈 Статистика</button>
+                <button class="history-btn" id="historyBtn" onclick="openHistory()">📊 История</button>
+                <button class="stats-btn" id="statsBtn" onclick="openStats()">📈 Статистика</button>
             </div>
 
             <div class="donate-section">
-                <h3>💝 Поддержать проект</h3>
-                <p>Спасибо за вашу поддержку!</p>
+                <h3 id="donateMainTitle">💝 Поддержать проект</h3>
+                <p id="donateMainSubtitle">Спасибо за вашу поддержку!</p>
                 <div class="donate-buttons">
-                    <button class="donate-btn" onclick="openDonateModal(0)">Пожертвовать</button>
+                    <button class="donate-btn" id="donateMainBtn" onclick="openDonateModal(0)">Пожертвовать</button>
                 </div>
             </div>
         </div>
 
         <!-- Средняя колонка - График -->
         <div class="card">
-            <h1>📈 Анализ</h1>
-            <p class="subtitle">Графики и тренды</p>
+            <h1 id="analysisTitle">📈 Анализ</h1>
+            <p class="subtitle" id="analysisSubtitle">Графики и тренды</p>
 
             <div class="tabs">
-                <button class="tab-btn active" onclick="switchTab('chart')">📊 График</button>
-                <button class="tab-btn" onclick="switchTab('speed-rating')">⭐ Рейтинг</button>
+                <button class="tab-btn active" id="tabChartBtn" onclick="switchTab('chart')">📊 График</button>
+                <button class="tab-btn" id="tabRatingBtn" onclick="switchTab('speed-rating')">⭐ Рейтинг</button>
             </div>
 
             <div id="chart" class="tab-content active">
@@ -1293,12 +1556,26 @@
 
         <!-- Правая колонка - История -->
         <div class="card">
-            <h1>📝 История</h1>
-            <p class="subtitle">Последние тесты</p>
+            <h1 id="historyTitle">📝 История</h1>
+            <p class="subtitle" id="historySubtitle">Последние тесты</p>
 
             <div id="historyList" class="history-list">
                 <div class="empty-state">📭 История пуста</div>
             </div>
+        </div>
+    </div>
+
+    <div class="site-footer">
+        <div class="site-footer-row">
+            <div class="network-status" id="networkStatus" aria-live="polite" title="Статус подключения">
+                <span class="network-status-dot" id="networkStatusDot"></span>
+                <span id="networkStatusLabel">Online</span>
+            </div>
+            <div class="site-footer-links">
+                <button class="site-footer-link" id="footerPrivacyLink" onclick="openPrivacyModal()">Политика конфиденциальности</button>
+                <button class="site-footer-link" id="footerTopLink" onclick="scrollToTop()">Наверх</button>
+            </div>
+            <div class="site-footer-copy" id="footerRightsText">© 2026 SpeedDash Pro. Все права защищены.</div>
         </div>
     </div>
 
@@ -1385,7 +1662,7 @@
                 <div class="feature-card" style="margin-bottom: 10px;">
                     <div class="feature-card-icon">💳</div>
                     <div class="feature-card-text" style="text-align: left;">
-                        <div class="feature-card-title">6 способов оплаты</div>
+                        <div class="feature-card-title">5 способов оплаты</div>
                     </div>
                 </div>
                 <div class="feature-card" style="margin-bottom: 20px;">
@@ -1395,6 +1672,59 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div class="modal" id="privacyModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="privacyModalTitle">🔒 Политика конфиденциальности</h2>
+                <button class="close-btn" onclick="closePrivacyModal()">×</button>
+            </div>
+            <div style="line-height: 1.7; color: #334155; font-size: 14px;">
+                <p id="privacyModalIntro" style="margin-bottom: 14px;">Мы не передаем историю тестов третьим лицам и используем данные только для работы приложения.</p>
+                <ul style="padding-left: 18px; margin-bottom: 14px;">
+                    <li id="privacyModalItem1">Результаты тестов хранятся локально в вашем браузере.</li>
+                    <li id="privacyModalItem2">Сообщение разработчику отправляется только при вашем действии.</li>
+                    <li id="privacyModalItem3">Для работы оплаты и аналитики используются внешние сервисы.</li>
+                </ul>
+                <p id="privacyModalOutro">Используя сайт, вы соглашаетесь с обработкой данных только в объеме, необходимом для работы SpeedDash Pro.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="contactDeveloperModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="contactDeveloperTitle">✉️ Сообщение разработчику</h2>
+                <button class="close-btn" onclick="closeContactDeveloperModal()">×</button>
+            </div>
+            <div class="input-group">
+                <label id="contactNameLabel" for="contactNameInput">Имя (необязательно)</label>
+                <input id="contactNameInput" type="text" maxlength="120" placeholder="Ваше имя">
+            </div>
+            <div class="input-group">
+                <label id="contactEmailLabel" for="contactEmailInput">Email (необязательно)</label>
+                <input id="contactEmailInput" type="email" maxlength="180" placeholder="you@example.com">
+            </div>
+            <div class="input-group">
+                <label id="contactMessageLabel" for="contactMessageInput">Сообщение</label>
+                <textarea id="contactMessageInput" maxlength="4000" rows="6" placeholder="Напишите сообщение разработчику..." style="width:100%; padding:11px; border:1px solid #e0e0e0; border-radius:10px; font-size:14px; resize:vertical;"></textarea>
+            </div>
+            <button class="start-btn" id="contactSendBtn" onclick="sendDeveloperMessage()" style="width: 100%;">Отправить</button>
+            <p id="contactPrivacyHint" style="margin-top:10px; font-size:12px; color:#94a3b8; text-align:center;">Сообщение отправляется напрямую разработчику и не публикуется на сайте.</p>
+        </div>
+    </div>
+
+    <div class="modal" id="installGuideModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="installGuideTitle">📱 Установка приложения</h2>
+                <button class="close-btn" onclick="closeInstallGuideModal()">×</button>
+            </div>
+            <p id="installGuideSubtitle" style="margin-bottom: 14px; color: #64748b;">Выберите способ установки для вашего устройства.</p>
+            <div id="installGuideSteps" style="line-height: 1.65; font-size: 14px; color: #334155;"></div>
+            <button class="start-btn" id="installGuideCloseBtn" onclick="closeInstallGuideModal()" style="width: 100%; margin-top: 18px;">Понятно</button>
         </div>
     </div>
 
@@ -1421,7 +1751,6 @@
                     <input type="number" id="customAmount" onchange="updateCustomAmount()" oninput="updateCustomAmount()" placeholder="Своя сумма..." min="1" style="padding: 8px 12px; border: 2px solid #667eea; border-radius: 6px; width: 150px; font-size: 14px;">
                 </div>
                 
-                <div id="amountSelector"></div>
                 <div id="currencyInfo" style="font-size: 12px; color: #999; margin-top: 8px;">Курс: 1 USD = 90 ₽</div>
             </div>
 
@@ -1430,40 +1759,38 @@
             </p>
 
             <div class="payment-grid">
-                <div class="payment-option" onclick="selectPayment(this, 'sbp')">
+                <div class="payment-option payment-unavailable" onclick="selectPayment(this, 'sbp')">
+                    <div class="payment-beta-tag">BETA</div>
                     <div class="payment-icon">🇷🇺</div>
                     <div class="payment-name">СБП</div>
-                    <div class="payment-desc paymentDescSbp">Карта России</div>
+                    <div class="payment-desc paymentDescSbp">Не доступно • Beta</div>
                 </div>
 
-                <div class="payment-option" onclick="selectPayment(this, 'visa')">
-                    <div class="payment-icon">💳</div>
-                    <div class="payment-name">Visa</div>
-                    <div class="payment-desc paymentDescVisa">Виза</div>
-                </div>
-
-                <div class="payment-option" onclick="selectPayment(this, 'mastercard')">
+                <div class="payment-option payment-unavailable" onclick="selectPayment(this, 'mastercard')">
+                    <div class="payment-beta-tag">BETA</div>
                     <div class="payment-icon">💳</div>
                     <div class="payment-name">MasterCard</div>
-                    <div class="payment-desc paymentDescMc">Мастеркард</div>
+                    <div class="payment-desc paymentDescMc">Не доступно • Beta</div>
                 </div>
 
-                <div class="payment-option" onclick="selectPayment(this, 'mir')">
+                <div class="payment-option" onclick="selectPayment(this, 'yookassa')">
+                    <div class="payment-icon">🟣</div>
+                    <div class="payment-name">ЮKassa</div>
+                    <div class="payment-desc paymentDescYk">Быстрая оплата</div>
+                </div>
+
+                <div class="payment-option payment-unavailable" onclick="selectPayment(this, 'mir')">
+                    <div class="payment-beta-tag">BETA</div>
                     <div class="payment-icon">⭐</div>
                     <div class="payment-name">МИР</div>
-                    <div class="payment-desc paymentDescMir">Национальная</div>
+                    <div class="payment-desc paymentDescMir">Не доступно • Beta</div>
                 </div>
 
-                <div class="payment-option" onclick="selectPayment(this, 'card')">
-                    <div class="payment-icon">🏦</div>
-                    <div class="payment-name">Карта</div>
-                    <div class="payment-desc paymentDescCard">Любая карта</div>
-                </div>
-
-                <div class="payment-option" onclick="selectPayment(this, 'crypto')">
+                <div class="payment-option payment-unavailable" onclick="selectPayment(this, 'crypto')">
+                    <div class="payment-beta-tag">BETA</div>
                     <div class="payment-icon">₿</div>
                     <div class="payment-name">Крипто</div>
-                    <div class="payment-desc paymentDescCrypto">BTC, ETH</div>
+                    <div class="payment-desc paymentDescCrypto">Не доступно • Beta</div>
                 </div>
             </div>
 
@@ -1479,67 +1806,7 @@
 
     <script src="speedTest.js"></script>
     <script>
-        // ===== ЗАЩИТА САЙТА =====
-        
-        // Блокируем открытие DevTools
-        document.addEventListener('keydown', (e) => {
-            if (
-                e.key === 'F12' ||
-                (e.ctrlKey && e.shiftKey && e.key === 'I') ||
-                (e.ctrlKey && e.shiftKey && e.key === 'C') ||
-                (e.ctrlKey && e.shiftKey && e.key === 'J') ||
-                (e.ctrlKey && e.key === 'u')
-            ) {
-                e.preventDefault();
-                return false;
-            }
-        });
-
-        // Блокируем контекстное меню (правая кнопка мыши)
-        document.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            return false;
-        });
-
-        // Блокируем копирование
-        document.addEventListener('copy', (e) => {
-            e.preventDefault();
-            return false;
-        });
-
-        // Блокируем вырезание
-        document.addEventListener('cut', (e) => {
-            e.preventDefault();
-            return false;
-        });
-
-        // Блокируем выделение
-        document.addEventListener('selectstart', (e) => {
-            e.preventDefault();
-            return false;
-        });
-
-        // Запрещаем выделение текста через CSS
-        document.body.style.userSelect = 'none';
-        document.body.style.webkitUserSelect = 'none';
-        document.body.style.msUserSelect = 'none';
-
-        // Отключаем Inspect Element
-        const devtoolsThreshold = { open: false, orientation: null };
-        const threshold = 160;
-        setInterval(() => {
-            if (window.outerHeight - window.innerHeight > threshold ||
-                window.outerWidth - window.innerWidth > threshold) {
-                if (!devtoolsThreshold.open) {
-                    devtoolsThreshold.open = true;
-                    document.body.innerHTML = '';
-                }
-            } else {
-                devtoolsThreshold.open = false;
-            }
-        }, 500);
-
-        // ===== КОНЕЦ ЗАЩИТЫ =====
+        // DevTools и стандартные действия браузера не ограничиваются.
         
         let chart = null;
         let historyData = [];
@@ -1547,15 +1814,270 @@
         let selectedPaymentMethod = null;
         let selectedAmount = 500;
         let donateLanguage = 'ru';
+        let appLanguage = 'ru';
         let currentCurrency = 'usd';
         let exchangeRate = 90;
+        let exchangeRateUpdatedAt = 0;
         let deferredInstallPrompt = null;
+
+        const mainI18n = {
+            ru: {
+                pageTitle: '⚡ SpeedDash Pro - Мгновенная Проверка Скорости',
+                themeToggleBtn: '⚫⚪',
+                themeToggleBtnTitle: 'Черный/белый фон',
+                installGuideTitle: '📱 Установка приложения',
+                installGuideSubtitle: 'Выберите способ установки для вашего устройства.',
+                installGuideCloseBtn: 'Понятно',
+                installGuideInstalled: 'Приложение уже установлено на этом устройстве.',
+                installGuideWindows: 'Windows (Chrome/Edge): нажмите значок установки в адресной строке (экран с плюсом) и подтвердите установку.',
+                installGuideAndroid: 'Android/Chrome: откройте меню браузера и выберите "Установить приложение" или "Добавить на главный экран".',
+                installGuideIOS: 'iPhone (Safari): нажмите "Поделиться", затем "На экран Домой".',
+                installGuideFallback: 'Если кнопки нет, обновите страницу и попробуйте снова в Chrome, Edge или Safari.',
+                sidebarMenuTitle: '⚙️ Меню',
+                sidebarHint: 'Быстрые действия и настройки',
+                sidebarThemeTitle: '🎨 Тема',
+                sidebarQuickLinksTitle: '📊 Быстрые ссылки',
+                sidebarDataTitle: '💾 Данные',
+                themeLightBtn: 'Светлая',
+                themeDarkBtn: 'Темная',
+                themeOceanBtn: 'Океан',
+                themeSunsetBtn: 'Закат',
+                quickStatsLink: '📈 Статистика',
+                quickHistoryLink: '📅 История',
+                quickCompareLink: '⚖️ Сравнение',
+                quickShareLink: '🔗 Поделиться результатом',
+                quickInstallLink: '📱 Установить приложение',
+                quickScheduleLink: '⏰ Расписание',
+                quickAboutLink: 'ℹ️ О сайте',
+                exportCsvLink: '📥 Экспорт CSV',
+                clearHistoryLink: '🗑️ Очистить историю',
+                contactDeveloperTitle: '✉️ Сообщение разработчику',
+                contactNameLabel: 'Имя (необязательно)',
+                contactEmailLabel: 'Email (необязательно)',
+                contactMessageLabel: 'Сообщение',
+                contactSendBtn: 'Отправить',
+                contactPrivacyHint: 'Сообщение отправляется напрямую разработчику и не публикуется на сайте.',
+                contactSendSuccess: 'Сообщение отправлено разработчику',
+                contactSendError: 'Не удалось отправить сообщение',
+                footerPrivacyLink: 'Политика конфиденциальности',
+                footerTopLink: 'Наверх',
+                footerRightsText: '© 2026 SpeedDash Pro. Все права защищены.',
+                privacyModalTitle: '🔒 Политика конфиденциальности',
+                privacyModalIntro: 'Мы не передаем историю тестов третьим лицам и используем данные только для работы приложения.',
+                privacyModalItem1: 'Результаты тестов хранятся локально в вашем браузере.',
+                privacyModalItem2: 'Сообщение разработчику отправляется только при вашем действии.',
+                privacyModalItem3: 'Для работы оплаты и аналитики используются внешние сервисы.',
+                privacyModalOutro: 'Используя сайт, вы соглашаетесь с обработкой данных только в объеме, необходимом для работы SpeedDash Pro.',
+                shareBtn: '🔗 Поделиться',
+                installBtn: '📱 Установить',
+                mainTitle: '⚡ Проверка Скорости',
+                mainSubtitle: 'Проверьте вашу скорость интернета',
+                readyStatus: 'Готово к тестированию',
+                startBtn: '▶️ НАЧАТЬ',
+                labelPing: 'Пинг',
+                unitPing: 'мс',
+                labelDownload: 'Загрузка',
+                labelUpload: 'Выгрузка',
+                qualityLabel: 'Качество:',
+                forLabel: 'Для:',
+                timeLabel: 'Время:',
+                historyBtn: '📊 История',
+                statsBtn: '📈 Статистика',
+                donateMainTitle: '💝 Поддержать проект',
+                donateMainSubtitle: 'Спасибо за вашу поддержку!',
+                donateMainBtn: 'Пожертвовать',
+                analysisTitle: '📈 Анализ',
+                analysisSubtitle: 'Графики и тренды',
+                tabChartBtn: '📊 График',
+                tabRatingBtn: '⭐ Рейтинг',
+                historyTitle: '📝 История',
+                historySubtitle: 'Последние тесты',
+                emptyHistory: '📭 История пуста',
+                testing: '<span class="spinner"></span> Тестирование...',
+                pingStatus: '<span class="spinner"></span> 📡 Пинг...',
+                downloadPrepare: '<span class="spinner"></span> ⚙️ Подготовка теста загрузки...',
+                downloadStatus: '<span class="spinner"></span> ⬇️ Загрузка...',
+                uploadStatus: '<span class="spinner"></span> ⬆️ Выгрузка...',
+                completedStatus: '✅ Завершено!'
+            },
+            en: {
+                pageTitle: '⚡ SpeedDash Pro - Instant Speed Test',
+                themeToggleBtn: '⚫⚪',
+                themeToggleBtnTitle: 'Black/white background',
+                installGuideTitle: '📱 Install app',
+                installGuideSubtitle: 'Choose the install method for your device.',
+                installGuideCloseBtn: 'Got it',
+                installGuideInstalled: 'The app is already installed on this device.',
+                installGuideWindows: 'Windows (Chrome/Edge): click the install icon in the address bar (screen with plus) and confirm installation.',
+                installGuideAndroid: 'Android/Chrome: open browser menu and choose "Install app" or "Add to Home screen".',
+                installGuideIOS: 'iPhone (Safari): tap "Share", then "Add to Home Screen".',
+                installGuideFallback: 'If there is no install button, refresh page and try again in Chrome, Edge, or Safari.',
+                sidebarMenuTitle: '⚙️ Menu',
+                sidebarHint: 'Quick actions and settings',
+                sidebarThemeTitle: '🎨 Theme',
+                sidebarQuickLinksTitle: '📊 Quick Links',
+                sidebarDataTitle: '💾 Data',
+                themeLightBtn: 'Light',
+                themeDarkBtn: 'Dark',
+                themeOceanBtn: 'Ocean',
+                themeSunsetBtn: 'Sunset',
+                quickStatsLink: '📈 Statistics',
+                quickHistoryLink: '📅 History',
+                quickCompareLink: '⚖️ Compare',
+                quickShareLink: '🔗 Share result',
+                quickInstallLink: '📱 Install app',
+                quickScheduleLink: '⏰ Schedule',
+                quickAboutLink: 'ℹ️ About site',
+                exportCsvLink: '📥 Export CSV',
+                clearHistoryLink: '🗑️ Clear history',
+                contactDeveloperTitle: '✉️ Message developer',
+                contactNameLabel: 'Name (optional)',
+                contactEmailLabel: 'Email (optional)',
+                contactMessageLabel: 'Message',
+                contactSendBtn: 'Send',
+                contactPrivacyHint: 'Message is delivered directly to the developer and is not published on the site.',
+                contactSendSuccess: 'Message sent to developer',
+                contactSendError: 'Failed to send message',
+                footerPrivacyLink: 'Privacy policy',
+                footerTopLink: 'Top',
+                footerRightsText: '© 2026 SpeedDash Pro. All rights reserved.',
+                privacyModalTitle: '🔒 Privacy policy',
+                privacyModalIntro: 'We do not share test history with third parties and use data only to run the app.',
+                privacyModalItem1: 'Test results are stored locally in your browser.',
+                privacyModalItem2: 'A message to the developer is sent only when you choose to do so.',
+                privacyModalItem3: 'Payment and analytics rely on external services.',
+                privacyModalOutro: 'By using the site, you agree to processing only the data needed for SpeedDash Pro to work.',
+                shareBtn: '🔗 Share',
+                installBtn: '📱 Install',
+                mainTitle: '⚡ Speed Test',
+                mainSubtitle: 'Check your internet speed',
+                readyStatus: 'Ready to test',
+                startBtn: '▶️ START',
+                labelPing: 'Ping',
+                unitPing: 'ms',
+                labelDownload: 'Download',
+                labelUpload: 'Upload',
+                qualityLabel: 'Quality:',
+                forLabel: 'For:',
+                timeLabel: 'Time:',
+                historyBtn: '📊 History',
+                statsBtn: '📈 Stats',
+                donateMainTitle: '💝 Support the project',
+                donateMainSubtitle: 'Thank you for your support!',
+                donateMainBtn: 'Donate',
+                analysisTitle: '📈 Analysis',
+                analysisSubtitle: 'Charts and trends',
+                tabChartBtn: '📊 Chart',
+                tabRatingBtn: '⭐ Rating',
+                historyTitle: '📝 History',
+                historySubtitle: 'Recent tests',
+                emptyHistory: '📭 History is empty',
+                testing: '<span class="spinner"></span> Testing...',
+                pingStatus: '<span class="spinner"></span> 📡 Ping...',
+                downloadPrepare: '<span class="spinner"></span> ⚙️ Preparing download test...',
+                downloadStatus: '<span class="spinner"></span> ⬇️ Downloading...',
+                uploadStatus: '<span class="spinner"></span> ⬆️ Uploading...',
+                completedStatus: '✅ Completed!'
+            }
+        };
+
+        function trMain(key) {
+            return mainI18n[appLanguage]?.[key] ?? mainI18n.ru[key] ?? '';
+        }
+
+        function setMainLanguage(lang) {
+            appLanguage = lang === 'en' ? 'en' : 'ru';
+            localStorage.setItem('appLanguage', appLanguage);
+            document.documentElement.lang = appLanguage;
+            applyMainLanguage();
+        }
+
+        function applyMainLanguage() {
+            document.title = trMain('pageTitle');
+
+            const ids = [
+                'themeToggleBtn',
+                'installGuideTitle', 'installGuideSubtitle', 'installGuideCloseBtn',
+                'sidebarMenuTitle', 'sidebarHint', 'sidebarThemeTitle', 'sidebarQuickLinksTitle', 'sidebarDataTitle',
+                'themeLightBtn', 'themeDarkBtn', 'themeOceanBtn', 'themeSunsetBtn',
+                'quickStatsLink', 'quickHistoryLink', 'quickCompareLink', 'quickShareLink',
+                'quickInstallLink', 'quickScheduleLink', 'quickAboutLink', 'exportCsvLink', 'clearHistoryLink',
+                'contactDeveloperTitle', 'contactNameLabel', 'contactEmailLabel', 'contactMessageLabel', 'contactSendBtn', 'contactPrivacyHint',
+                'footerPrivacyLink', 'footerTopLink', 'footerRightsText', 'privacyModalTitle', 'privacyModalIntro', 'privacyModalItem1', 'privacyModalItem2', 'privacyModalItem3', 'privacyModalOutro',
+                'shareBtn', 'installBtn', 'mainTitle', 'mainSubtitle', 'startBtn',
+                'labelPing', 'unitPing', 'labelDownload', 'labelUpload',
+                'qualityLabel', 'forLabel', 'timeLabel', 'historyBtn', 'statsBtn',
+                'donateMainTitle', 'donateMainSubtitle', 'donateMainBtn',
+                'analysisTitle', 'analysisSubtitle', 'tabChartBtn', 'tabRatingBtn',
+                'historyTitle', 'historySubtitle'
+            ];
+
+            ids.forEach((id) => {
+                const node = document.getElementById(id);
+                if (node) {
+                    node.textContent = trMain(id);
+                }
+            });
+
+            const themeLightBtn = document.getElementById('themeLightBtn');
+            const themeDarkBtn = document.getElementById('themeDarkBtn');
+            const themeOceanBtn = document.getElementById('themeOceanBtn');
+            const themeSunsetBtn = document.getElementById('themeSunsetBtn');
+            if (themeLightBtn) themeLightBtn.title = trMain('themeLightBtn');
+            if (themeDarkBtn) themeDarkBtn.title = trMain('themeDarkBtn');
+            if (themeOceanBtn) themeOceanBtn.title = trMain('themeOceanBtn');
+            if (themeSunsetBtn) themeSunsetBtn.title = trMain('themeSunsetBtn');
+            const themeToggleBtn = document.getElementById('themeToggleBtn');
+            if (themeToggleBtn) {
+                themeToggleBtn.title = trMain('themeToggleBtnTitle');
+                themeToggleBtn.setAttribute('aria-label', trMain('themeToggleBtnTitle'));
+            }
+
+            updateInstallGuideContent();
+
+            const statusDiv = document.getElementById('status');
+            if (statusDiv && statusDiv.className === 'status') {
+                statusDiv.textContent = trMain('readyStatus');
+            }
+
+            const mainLangRuBtn = document.getElementById('mainLangRuBtn');
+            const mainLangEnBtn = document.getElementById('mainLangEnBtn');
+            if (mainLangRuBtn && mainLangEnBtn) {
+                mainLangRuBtn.classList.toggle('active', appLanguage === 'ru');
+                mainLangEnBtn.classList.toggle('active', appLanguage === 'en');
+            }
+
+            updateHistoryList();
+        }
 
         function setInstallButtonVisible(visible) {
             const installBtn = document.getElementById('installBtn');
             if (installBtn) {
                 installBtn.style.display = visible ? 'inline-block' : 'none';
             }
+        }
+
+        function updateNetworkStatus() {
+            const isOnline = navigator.onLine;
+            const statusLabel = document.getElementById('networkStatusLabel');
+            const statusBadge = document.getElementById('networkStatus');
+
+            document.body.classList.toggle('offline-mode', !isOnline);
+
+            if (statusLabel) {
+                statusLabel.textContent = isOnline ? 'Online' : 'Offline';
+            }
+
+            if (statusBadge) {
+                statusBadge.title = isOnline
+                    ? 'Подключение к интернету активно'
+                    : 'Нет подключения к интернету';
+                statusBadge.setAttribute('aria-label', statusBadge.title);
+            }
+        }
+
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         async function registerServiceWorker() {
@@ -1620,8 +2142,13 @@
         }
 
         async function installPwa() {
+            if (isStandaloneMode()) {
+                showNotification(trMain('installGuideInstalled'), 'info');
+                return;
+            }
+
             if (!deferredInstallPrompt) {
-                showNotification('Установка пока недоступна', 'info');
+                openInstallGuideModal();
                 return;
             }
 
@@ -1638,6 +2165,53 @@
             showNotification('Установка отменена', 'info');
         }
 
+        function isStandaloneMode() {
+            return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        }
+
+        function getInstallGuideHtml() {
+            const ua = navigator.userAgent || '';
+            const isIOS = /iPad|iPhone|iPod/.test(ua);
+            const isAndroid = /Android/.test(ua);
+            const isWindows = /Windows/i.test(ua);
+
+            const steps = [];
+            const labels = [];
+
+            steps.push(trMain('installGuideWindows'));
+            labels.push(isWindows);
+            steps.push(trMain('installGuideAndroid'));
+            labels.push(isAndroid);
+            steps.push(trMain('installGuideIOS'));
+            labels.push(isIOS);
+
+            steps.push(trMain('installGuideFallback'));
+            labels.push(false);
+
+            return `<ol style="padding-left: 18px; margin: 0;">${steps.map((s, i) => `<li style="margin-bottom: 10px;${labels[i] ? ' font-weight: 700; color: #1d4ed8;' : ''}">${s}</li>`).join('')}</ol>`;
+        }
+
+        function updateInstallGuideContent() {
+            const steps = document.getElementById('installGuideSteps');
+            if (!steps) return;
+            steps.innerHTML = getInstallGuideHtml();
+        }
+
+        function openInstallGuideModal() {
+            updateInstallGuideContent();
+            const modal = document.getElementById('installGuideModal');
+            if (modal) {
+                modal.classList.add('active');
+            }
+        }
+
+        function closeInstallGuideModal() {
+            const modal = document.getElementById('installGuideModal');
+            if (modal) {
+                modal.classList.remove('active');
+            }
+        }
+
         function loadHistory() {
             const saved = localStorage.getItem('speedTestHistory');
             historyData = saved ? JSON.parse(saved) : [];
@@ -1648,22 +2222,78 @@
             localStorage.setItem('speedTestHistory', JSON.stringify(historyData));
         }
 
+        function openSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const menuBtn = document.getElementById('menuBtn');
+
+            if (!sidebar || !overlay) return;
+
+            sidebar.classList.add('active');
+            overlay.classList.add('active');
+            document.body.classList.add('sidebar-open');
+            if (menuBtn) {
+                menuBtn.setAttribute('aria-expanded', 'true');
+            }
+        }
+
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const menuBtn = document.getElementById('menuBtn');
+
+            if (!sidebar || !overlay) return;
+
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+            document.body.classList.remove('sidebar-open');
+            if (menuBtn) {
+                menuBtn.setAttribute('aria-expanded', 'false');
+            }
+        }
+
         function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('active');
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar) return;
+
+            if (sidebar.classList.contains('active')) {
+                closeSidebar();
+                return;
+            }
+
+            openSidebar();
         }
 
         function setTheme(theme) {
-            document.body.classList.remove('dark-mode', 'ocean-theme', 'sunset-theme', 'forest-theme');
-            if (theme !== 'light') {
-                document.body.classList.add(theme + '-theme');
+            const normalizedTheme = theme === 'dark' ? 'dark' : 'light';
+            document.body.classList.remove('dark-mode');
+            if (normalizedTheme === 'dark') {
+                document.body.classList.add('dark-mode');
             }
-            localStorage.setItem('theme', theme);
-            updateThemeButtons(theme);
+            localStorage.setItem('theme', normalizedTheme);
+            updateThemeButtons(normalizedTheme);
+            updateThemeToggleButton(normalizedTheme);
+        }
+
+        function updateThemeToggleButton(theme) {
+            const themeToggleBtn = document.getElementById('themeToggleBtn');
+            if (!themeToggleBtn) return;
+            const isDark = theme === 'dark';
+            themeToggleBtn.style.background = isDark ? 'rgba(15, 23, 42, 0.7)' : 'rgba(255,255,255,0.2)';
+            themeToggleBtn.style.borderColor = isDark ? 'rgba(148, 163, 184, 0.6)' : 'rgba(255,255,255,0.3)';
+        }
+
+        function toggleContrastTheme() {
+            const isDark = document.body.classList.contains('dark-mode');
+            setTheme(isDark ? 'light' : 'dark');
         }
 
         function updateThemeButtons(theme) {
             document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelector(`.theme-btn.${theme}`).classList.add('active');
+            const targetBtn = document.querySelector(`.theme-btn.${theme}`);
+            if (targetBtn) {
+                targetBtn.classList.add('active');
+            }
         }
 
         function getQuality(download, upload, ping) {
@@ -1763,6 +2393,15 @@
             });
         }
 
+        function escapeHtml(value) {
+            return String(value)
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;');
+        }
+
         function updateHistoryList() {
             const listDiv = document.getElementById('historyList');
             const fullListDiv = document.getElementById('fullHistoryList');
@@ -1770,35 +2409,46 @@
 
             let html = '';
             if (last5.length === 0) {
-                html = '<div class="empty-state">📭 История пуста</div>';
+                html = `<div class="empty-state">${trMain('emptyHistory')}</div>`;
             } else {
-                html = last5.map((item, idx) => `
+                html = last5.map((item, idx) => {
+                    const safeDownload = escapeHtml(item.download);
+                    const safeUpload = escapeHtml(item.upload);
+                    const safePing = escapeHtml(item.ping);
+                    const safeTimestamp = escapeHtml(item.timestamp);
+                    return `
                     <div class="history-item">
                         <div class="history-item-stats">
-                            <span>⬇️ ${item.download}</span>
-                            <span>⬆️ ${item.upload}</span>
-                            <span>📡 ${item.ping}мс</span>
+                            <span>⬇️ ${safeDownload}</span>
+                            <span>⬆️ ${safeUpload}</span>
+                            <span>📡 ${safePing}мс</span>
                         </div>
-                        <button class="delete-btn" onclick="deleteTest('${item.timestamp}')">✕</button>
+                        <button class="delete-btn" onclick="deleteTest('${safeTimestamp}')">✕</button>
                     </div>
-                `).join('');
+                `;
+                }).join('');
             }
 
             listDiv.innerHTML = html;
             
             if (historyData.length === 0) {
-                fullListDiv.innerHTML = '<div class="empty-state">📭 История пуста</div>';
+                fullListDiv.innerHTML = `<div class="empty-state">${trMain('emptyHistory')}</div>`;
             } else {
-                fullListDiv.innerHTML = historyData.slice().reverse().map(item => `
+                fullListDiv.innerHTML = historyData.slice().reverse().map(item => {
+                    const safeDownload = escapeHtml(item.download);
+                    const safeUpload = escapeHtml(item.upload);
+                    const safePing = escapeHtml(item.ping);
+                    return `
                     <div class="history-item">
                         <div class="history-item-stats">
-                            <span>⬇️ ${item.download} Mbps</span>
-                            <span>⬆️ ${item.upload} Mbps</span>
-                            <span>📡 ${item.ping}мс</span>
+                            <span>⬇️ ${safeDownload} Mbps</span>
+                            <span>⬆️ ${safeUpload} Mbps</span>
+                            <span>📡 ${safePing}мс</span>
                         </div>
-                        <span class="history-item-time">${new Date(item.timestamp).toLocaleString('ru-RU')}</span>
+                        <span class="history-item-time">${escapeHtml(new Date(item.timestamp).toLocaleString('ru-RU'))}</span>
                     </div>
-                `).join('');
+                `;
+                }).join('');
             }
         }
 
@@ -1878,6 +2528,12 @@
             const first = historyData[0];
             const last = historyData[historyData.length - 1];
             const downloadDiff = ((parseFloat(last.download) - parseFloat(first.download)) / parseFloat(first.download) * 100).toFixed(1);
+            const firstDownload = escapeHtml(first.download);
+            const lastDownload = escapeHtml(last.download);
+            const firstUpload = escapeHtml(first.upload);
+            const lastUpload = escapeHtml(last.upload);
+            const firstPing = escapeHtml(first.ping);
+            const lastPing = escapeHtml(last.ping);
 
             const html = `
                 <table class="comparison-table">
@@ -1889,20 +2545,20 @@
                     </tr>
                     <tr>
                         <td>Загрузка</td>
-                        <td>${first.download} Mbps</td>
-                        <td>${last.download} Mbps</td>
+                        <td>${firstDownload} Mbps</td>
+                        <td>${lastDownload} Mbps</td>
                         <td style="color: ${downloadDiff > 0 ? '#10b981' : '#ef4444'}">${downloadDiff > 0 ? '+' : ''}${downloadDiff}%</td>
                     </tr>
                     <tr>
                         <td>Выгрузка</td>
-                        <td>${first.upload} Mbps</td>
-                        <td>${last.upload} Mbps</td>
+                        <td>${firstUpload} Mbps</td>
+                        <td>${lastUpload} Mbps</td>
                         <td></td>
                     </tr>
                     <tr>
                         <td>Пинг</td>
-                        <td>${first.ping} мс</td>
-                        <td>${last.ping} мс</td>
+                        <td>${firstPing} мс</td>
+                        <td>${lastPing} мс</td>
                         <td></td>
                     </tr>
                 </table>
@@ -1943,16 +2599,132 @@
             document.getElementById('aboutModal').classList.remove('active');
         }
 
-        function openDonateModal(amount) {
-            selectedAmount = amount;
+        function openPrivacyModal() {
+            document.getElementById('privacyModal').classList.add('active');
+        }
+
+        function closePrivacyModal() {
+            document.getElementById('privacyModal').classList.remove('active');
+        }
+
+        function openContactDeveloperModal() {
+            document.getElementById('contactDeveloperModal').classList.add('active');
+        }
+
+        function closeContactDeveloperModal() {
+            document.getElementById('contactDeveloperModal').classList.remove('active');
+        }
+
+        async function sendDeveloperMessage() {
+            const name = document.getElementById('contactNameInput').value.trim();
+            const email = document.getElementById('contactEmailInput').value.trim();
+            const message = document.getElementById('contactMessageInput').value.trim();
+            const sendBtn = document.getElementById('contactSendBtn');
+
+            if (message.length < 5) {
+                showNotification('Введите сообщение (минимум 5 символов)', 'error');
+                return;
+            }
+
+            sendBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/contact-developer', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, email, message })
+                });
+
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    throw new Error(data.error || trMain('contactSendError'));
+                }
+
+                document.getElementById('contactNameInput').value = '';
+                document.getElementById('contactEmailInput').value = '';
+                document.getElementById('contactMessageInput').value = '';
+                closeContactDeveloperModal();
+                showNotification(trMain('contactSendSuccess'), 'success');
+            } catch (error) {
+                console.error('Send developer message error:', error);
+                showNotification(`${trMain('contactSendError')}: ${error.message}`, 'error');
+            } finally {
+                sendBtn.disabled = false;
+            }
+        }
+
+        function formatExchangeRate(value) {
+            const safe = Number(value);
+            if (!Number.isFinite(safe) || safe <= 0) {
+                return '90.00';
+            }
+            return safe.toFixed(2);
+        }
+
+        function renderCurrencyInfo() {
+            const currencyInfo = document.getElementById('currencyInfo');
+            if (!currencyInfo) return;
+
+            const formatted = formatExchangeRate(exchangeRate);
+            const stale = exchangeRateUpdatedAt === 0;
+
+            if (currentCurrency === 'rub') {
+                currencyInfo.textContent = stale
+                    ? `Курс: 1 USD ≈ ${formatted} ₽ (резерв)`
+                    : `Курс: 1 USD = ${formatted} ₽`;
+                return;
+            }
+
+            currencyInfo.textContent = stale
+                ? `Rate: 1 USD ≈ ${formatted} RUB (fallback)`
+                : `Rate: 1 USD = ${formatted} RUB`;
+        }
+
+        async function refreshExchangeRate(force = false) {
+            try {
+                const response = await fetch(`/api/exchange-rate${force ? '?force=1' : ''}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                const rate = Number(data?.rate);
+                if (!Number.isFinite(rate) || rate <= 0) {
+                    throw new Error('Некорректный курс в ответе');
+                }
+
+                exchangeRate = rate;
+                exchangeRateUpdatedAt = Number(data?.updatedAt || Date.now());
+            } catch (error) {
+                console.error('Не удалось обновить курс USD/RUB:', error);
+                if (!Number.isFinite(exchangeRate) || exchangeRate <= 0) {
+                    exchangeRate = 90;
+                }
+            } finally {
+                renderCurrencyInfo();
+            }
+        }
+
+        async function openDonateModal(amount) {
+            selectedAmount = amount > 0 ? amount : 500;
             selectedPaymentMethod = null;
             donateLanguage = 'ru'; // Reset to Russian by default
             currentCurrency = 'usd';
+
+            await refreshExchangeRate(false);
             
             document.getElementById('currencySelect').value = 'usd';
-            document.getElementById('customAmount').value = '';
-            
-            updateAmountButtons();
+            document.getElementById('customAmount').value = '5';
+            updateCustomAmount();
+            renderCurrencyInfo();
             
             document.querySelectorAll('.payment-option').forEach(el => el.classList.remove('selected'));
             
@@ -1968,28 +2740,10 @@
             document.getElementById('donateModal').classList.add('active');
         }
         
-        function updateAmountButtons() {
-            const amounts = [5, 10, 25, 50];
-            const selector = document.getElementById('amountSelector');
-            
-            selector.innerHTML = amounts.map((amt, idx) => {
-                const actualAmount = currentCurrency === 'usd' ? amt * 100 : Math.round(amt * exchangeRate * 100);
-                return `<button class="amount-btn ${idx === 0 ? 'selected' : ''}" onclick="selectAmount(this, ${actualAmount})">•</button>`;
-            }).join('');
-            
-            // Update selected amount to first button value
-            selectedAmount = amounts[0] * 100;
-        }
-        
         function changeCurrency() {
             currentCurrency = document.getElementById('currencySelect').value;
-            updateAmountButtons();
-            
-            if (currentCurrency === 'rub') {
-                document.getElementById('currencyInfo').textContent = `Курс: 1 USD = ${exchangeRate} ₽`;
-            } else {
-                document.getElementById('currencyInfo').textContent = `Rate: 1 USD = ${exchangeRate} RUB`;
-            }
+            updateCustomAmount();
+            renderCurrencyInfo();
         }
 
         function closeDonateModal() {
@@ -2019,43 +2773,40 @@
                 document.getElementById('sumLabel').textContent = 'Выберите сумму пожертвования';
                 document.getElementById('payLabel').textContent = '💳 Выберите способ оплаты:';
                 document.getElementById('payBtn').textContent = 'Продолжить платеж →';
-                document.querySelector('.paymentDescSbp').textContent = 'Карта России';
-                document.querySelector('.paymentDescVisa').textContent = 'Виза';
-                document.querySelector('.paymentDescMc').textContent = 'Мастеркард';
-                document.querySelector('.paymentDescMir').textContent = 'Национальная';
-                document.querySelector('.paymentDescCard').textContent = 'Любая карта';
-                document.querySelector('.paymentDescCrypto').textContent = 'BTC, ETH';
+                document.querySelector('.paymentDescSbp').textContent = 'Не доступно • Beta';
+                document.querySelector('.paymentDescMc').textContent = 'Не доступно • Beta';
+                document.querySelector('.paymentDescYk').textContent = 'Быстрая оплата';
+                document.querySelector('.paymentDescMir').textContent = 'Не доступно • Beta';
+                document.querySelector('.paymentDescCrypto').textContent = 'Не доступно • Beta';
             } else {
                 document.getElementById('donateTitle').textContent = 'Support Project';
                 document.getElementById('sumLabel').textContent = 'Select donation amount';
                 document.getElementById('payLabel').textContent = '💳 Select payment method:';
                 document.getElementById('payBtn').textContent = 'Continue payment →';
-                document.querySelector('.paymentDescSbp').textContent = 'Russian Card';
-                document.querySelector('.paymentDescVisa').textContent = 'Visa Card';
-                document.querySelector('.paymentDescMc').textContent = 'MasterCard';
-                document.querySelector('.paymentDescMir').textContent = 'National System';
-                document.querySelector('.paymentDescCard').textContent = 'Any Card';
-                document.querySelector('.paymentDescCrypto').textContent = 'BTC, ETH';
+                document.querySelector('.paymentDescSbp').textContent = 'Unavailable • Beta';
+                document.querySelector('.paymentDescMc').textContent = 'Unavailable • Beta';
+                document.querySelector('.paymentDescYk').textContent = 'Fast payment';
+                document.querySelector('.paymentDescMir').textContent = 'Unavailable • Beta';
+                document.querySelector('.paymentDescCrypto').textContent = 'Unavailable • Beta';
             }
         }
 
-        function selectAmount(btn, amount) {
-            selectedAmount = amount;
-            document.querySelectorAll('.amount-btn').forEach(el => el.classList.remove('selected'));
-            btn.classList.add('selected');
-            document.getElementById('customAmount').value = ''; // Clear custom input
-        }
-        
         function updateCustomAmount() {
             const customInput = document.getElementById('customAmount');
-            if (customInput.value) {
+            if (customInput.value && Number(customInput.value) > 0) {
                 const amount = parseFloat(customInput.value) * 100;
                 selectedAmount = amount;
-                document.querySelectorAll('.amount-btn').forEach(el => el.classList.remove('selected'));
+            } else {
+                selectedAmount = currentCurrency === 'usd' ? 500 : Math.round(5 * 100);
             }
         }
 
         function selectPayment(element, method) {
+            if (element.classList.contains('payment-unavailable')) {
+                showNotification('Этот способ пока не доступен в Beta', 'info');
+                return;
+            }
+
             selectedPaymentMethod = method;
             document.querySelectorAll('.payment-option').forEach(el => el.classList.remove('selected'));
             element.classList.add('selected');
@@ -2169,30 +2920,70 @@
             startBtn.disabled = true;
             resetBtn.disabled = true;
             statusDiv.className = 'status testing';
-            statusDiv.innerHTML = '<span class="spinner"></span> Тестирование...';
+            statusDiv.innerHTML = trMain('testing');
             progressFill.style.width = '0%';
             qualityInfo.style.display = 'none';
-            document.getElementById('sidebar').classList.remove('active');
+            closeSidebar();
 
-            const speedTest = new InternetSpeedTest();
+            const speedTest = new InternetSpeedTest({
+                onProgress: (info) => {
+                    if (!info || !statusDiv) return;
+
+                    if (info.phase === 'calibration-start') {
+                        statusDiv.innerHTML = '<span class="spinner"></span> ⚙️ Оптимизируем тест под вашу сеть...';
+                        return;
+                    }
+
+                    if (info.phase === 'calibration-done' && Number.isFinite(Number(info.bytes))) {
+                        const mb = (Number(info.bytes) / (1024 * 1024)).toFixed(1);
+                        statusDiv.innerHTML = appLanguage === 'en'
+                            ? `<span class="spinner"></span> ⚙️ Calibration: ${mb} MB`
+                            : `<span class="spinner"></span> ⚙️ Калибровка: ${mb} MB`;
+                        return;
+                    }
+
+                    if (info.phase === 'calibration-fallback') {
+                        statusDiv.innerHTML = appLanguage === 'en'
+                            ? '<span class="spinner"></span> ⚙️ Safe test mode'
+                            : '<span class="spinner"></span> ⚙️ Безопасный режим теста';
+                    }
+                }
+            });
             let results = {};
 
             try {
                 progressFill.style.width = '25%';
-                statusDiv.innerHTML = '<span class="spinner"></span> 📡 Пинг...';
+                statusDiv.innerHTML = trMain('pingStatus');
                 await speedTest.measurePing();
+                if (!Number.isFinite(Number(speedTest.results.ping))) {
+                    throw new Error('Не удалось измерить пинг. Проверьте подключение и попробуйте снова.');
+                }
                 results.ping = speedTest.results.ping;
                 animateValue('ping', 0, parseFloat(results.ping), 600);
 
                 progressFill.style.width = '50%';
-                statusDiv.innerHTML = '<span class="spinner"></span> ⬇️ Загрузка...';
+                statusDiv.innerHTML = trMain('downloadPrepare');
                 await speedTest.measureDownloadSpeed();
+                if (!Number.isFinite(Number(speedTest.results.downloadSpeed))) {
+                    throw new Error('Не удалось измерить скорость загрузки. Проверьте сеть и попробуйте снова.');
+                }
                 results.download = speedTest.results.downloadSpeed;
+                const calibratedMb = Number(speedTest.results.calibratedDownloadBytes || 0) / (1024 * 1024);
+                if (Number.isFinite(calibratedMb) && calibratedMb > 0) {
+                    statusDiv.innerHTML = appLanguage === 'en'
+                        ? `<span class="spinner"></span> ⬇️ Downloading... (${calibratedMb.toFixed(1)} MB)`
+                        : `<span class="spinner"></span> ⬇️ Загрузка... (${calibratedMb.toFixed(1)} MB)`;
+                } else {
+                    statusDiv.innerHTML = trMain('downloadStatus');
+                }
                 animateValue('download', 0, parseFloat(results.download), 600);
 
                 progressFill.style.width = '75%';
-                statusDiv.innerHTML = '<span class="spinner"></span> ⬆️ Выгрузка...';
+                statusDiv.innerHTML = trMain('uploadStatus');
                 await speedTest.measureUploadSpeed();
+                if (!Number.isFinite(Number(speedTest.results.uploadSpeed))) {
+                    throw new Error('Не удалось измерить скорость выгрузки. Проверьте сеть и попробуйте снова.');
+                }
                 results.upload = speedTest.results.uploadSpeed;
                 animateValue('upload', 0, parseFloat(results.upload), 600);
 
@@ -2217,12 +3008,12 @@
                 document.getElementById('ratingBadge').innerHTML = `<div class="rating-badge ${ratingClass}">${ratingText}</div>`;
                 document.getElementById('quality').textContent = quality;
                 document.getElementById('recommendation').textContent = recommendation;
-                document.getElementById('timestamp').textContent = new Date().toLocaleString('ru-RU');
+                document.getElementById('timestamp').textContent = new Date().toLocaleString(appLanguage === 'en' ? 'en-US' : 'ru-RU');
                 qualityInfo.style.display = 'block';
 
                 progressFill.style.width = '100%';
                 statusDiv.className = 'status completed';
-                statusDiv.textContent = '✅ Завершено!';
+                statusDiv.textContent = trMain('completedStatus');
                 updateUI();
                 showNotification('Тест завершен успешно!', 'success');
 
@@ -2239,14 +3030,18 @@
 
         function animateValue(id, start, end, duration) {
             let startTimestamp = null;
+            const decimals = id === 'ping' ? 1 : 2;
             const step = (timestamp) => {
                 if (!startTimestamp) startTimestamp = timestamp;
                 const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-                const value = Math.floor(progress * (end - start) + start);
-                document.getElementById(id).textContent = value;
+                const value = progress * (end - start) + start;
+                document.getElementById(id).textContent = value.toFixed(decimals);
                 if (progress < 1) {
                     requestAnimationFrame(step);
+                    return;
                 }
+
+                document.getElementById(id).textContent = Number(end).toFixed(decimals);
             };
             requestAnimationFrame(step);
         }
@@ -2257,16 +3052,71 @@
             document.getElementById('upload').textContent = '—';
             document.getElementById('qualityInfo').style.display = 'none';
             document.getElementById('status').className = 'status';
-            document.getElementById('status').textContent = 'Готово к тестированию';
+            document.getElementById('status').textContent = trMain('readyStatus');
             document.getElementById('progressFill').style.width = '0%';
+        }
+
+        function setupSidebarInteractions() {
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar) return;
+
+            sidebar.addEventListener('click', (event) => {
+                const item = event.target.closest('.sidebar-item');
+                if (!item) return;
+
+                sidebar.querySelectorAll('.sidebar-item').forEach((el) => el.classList.remove('active'));
+                item.classList.add('active');
+
+                setTimeout(() => {
+                    closeSidebar();
+                }, 130);
+            });
+        }
+
+        function handleStartupAction() {
+            const params = new URLSearchParams(window.location.search);
+            const action = String(params.get('action') || '').toLowerCase();
+
+            if (action === 'test') {
+                setTimeout(() => runTest(), 250);
+                return;
+            }
+
+            if (action === 'history') {
+                setTimeout(() => openHistory(), 100);
+                return;
+            }
+
+            if (action === 'compare') {
+                setTimeout(() => openCompare(), 100);
+                return;
+            }
+
+            if (action === 'donate') {
+                setTimeout(() => openDonateModal(0), 100);
+                return;
+            }
+
+            if (action === 'share') {
+                setTimeout(() => shareResults(), 100);
+            }
         }
 
         window.addEventListener('DOMContentLoaded', () => {
             const theme = localStorage.getItem('theme') || 'light';
+            appLanguage = localStorage.getItem('appLanguage') || 'ru';
             setTheme(theme);
             loadHistory();
+            applyMainLanguage();
+            setupSidebarInteractions();
             registerServiceWorker();
-            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+            updateNetworkStatus();
+            refreshExchangeRate(false);
+            setInterval(() => {
+                refreshExchangeRate(false);
+            }, 10 * 60 * 1000);
+            handleStartupAction();
+            const isStandalone = isStandaloneMode();
             setInstallButtonVisible(!isStandalone && !!deferredInstallPrompt);
 
             const params = new URLSearchParams(window.location.search);
@@ -2294,10 +3144,19 @@
             setInstallButtonVisible(true);
         });
 
+        window.addEventListener('online', updateNetworkStatus);
+        window.addEventListener('offline', updateNetworkStatus);
+
         window.addEventListener('appinstalled', () => {
             deferredInstallPrompt = null;
             setInstallButtonVisible(false);
             showNotification('Приложение установлено 🎉', 'success');
+        });
+
+        window.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeSidebar();
+            }
         });
 
         window.onclick = function(event) {

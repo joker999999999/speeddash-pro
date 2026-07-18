@@ -1,0 +1,2311 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#667eea">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>⚡ SpeedDash Pro - Мгновенная Проверка Скорости</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://js.stripe.com/v3/"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #0f172a;
+            --light: #f8fafc;
+            --glass-bg: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            transition: background 0.3s ease;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body.dark-mode {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #f0f4f8;
+        }
+
+        body.ocean-theme {
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+        }
+
+        body.sunset-theme {
+            background: linear-gradient(135deg, #f97316 0%, #dc2626 100%);
+        }
+
+        body.forest-theme {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        }
+
+        .sidebar {
+            position: fixed;
+            left: -320px;
+            top: 0;
+            width: 300px;
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            box-shadow: 5px 0 30px rgba(0,0,0,0.2);
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 999;
+            overflow-y: auto;
+            padding: 20px;
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        body.dark-mode .sidebar {
+            background: rgba(30, 41, 59, 0.95);
+            color: #f0f4f8;
+        }
+
+        .sidebar.active {
+            left: 0;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .sidebar-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #667eea;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-close:hover {
+            transform: rotate(90deg);
+        }
+
+        .sidebar-section {
+            margin-bottom: 30px;
+        }
+
+        .sidebar-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #667eea;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            letter-spacing: 1.2px;
+        }
+
+        .sidebar-item {
+            padding: 12px 15px;
+            margin: 5px 0;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-left: 3px solid transparent;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .sidebar-item:hover {
+            background: rgba(102, 126, 234, 0.1);
+            border-left-color: #667eea;
+            transform: translateX(5px);
+        }
+
+        .theme-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .theme-btn {
+            padding: 10px;
+            border: 2px solid transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .theme-btn.light { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .theme-btn.dark { background: linear-gradient(135deg, #1e293b 0%, #475569 100%); color: white; }
+        .theme-btn.ocean { background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: white; }
+        .theme-btn.sunset { background: linear-gradient(135deg, #f97316 0%, #dc2626 100%); color: white; }
+
+        .theme-btn.active {
+            border-color: rgba(0,0,0,0.3);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            transform: scale(1.05);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+            animation: slideInDown 0.6s ease-out;
+            position: relative;
+            z-index: 10;
+        }
+
+        @keyframes slideInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 800;
+            color: white;
+            text-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            letter-spacing: -0.5px;
+        }
+
+        .logo span {
+            display: inline-block;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.1); }
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .menu-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+        }
+
+        .menu-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.1);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+
+        .header-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 12px 14px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+        }
+
+        .header-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 24px;
+            position: relative;
+            z-index: 10;
+        }
+
+        @media (max-width: 1200px) {
+            .main-container { grid-template-columns: 1fr 1fr; gap: 20px; }
+        }
+
+        @media (max-width: 768px) {
+            .main-container { grid-template-columns: 1fr; gap: 16px; }
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            padding: 32px;
+            animation: slideUp 0.6s ease-out;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+
+        body.dark-mode .card {
+            background: rgba(30, 41, 59, 0.8);
+            color: #f0f4f8;
+            border-color: rgba(148, 163, 184, 0.2);
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            text-align: center;
+            color: #1e293b;
+            margin-bottom: 8px;
+            font-size: 26px;
+            font-weight: 800;
+        }
+
+        body.dark-mode h1 {
+            color: #f0f4f8;
+        }
+
+        h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
+        body.dark-mode .subtitle {
+            color: #cbd5e1;
+        }
+
+        .status {
+            text-align: center;
+            padding: 18px;
+            background: linear-gradient(135deg, #f0f0f0 0%, #e8e8e8 100%);
+            border-radius: 14px;
+            margin-bottom: 25px;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 15px;
+        }
+
+        body.dark-mode .status {
+            background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+            color: #f0f4f8;
+        }
+
+        .status.testing {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            color: #1e40af;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .status.completed {
+            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+            color: #15803d;
+            animation: bounce 0.6s ease-out;
+        }
+
+        .status.error {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            color: #991b1b;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(25, 118, 210, 0.2);
+            border-top: 2px solid #1976d2;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            flex: 1;
+            min-width: 100px;
+            padding: 13px 16px;
+            font-size: 14px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.5);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        button:active::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .start-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .start-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+        }
+
+        .reset-btn, .history-btn, .stats-btn, .schedule-btn, .compare-btn {
+            background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+            color: #333;
+        }
+
+        body.dark-mode .reset-btn, body.dark-mode .history-btn, body.dark-mode .stats-btn, body.dark-mode .schedule-btn, body.dark-mode .compare-btn {
+            background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+            color: #f0f4f8;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: linear-gradient(90deg, #e0e0e0, #f0f0f0);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 25px;
+        }
+
+        body.dark-mode .progress-bar {
+            background: linear-gradient(90deg, #334155, #475569);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 15px rgba(102, 126, 234, 0.6);
+            border-radius: 10px;
+        }
+
+        .results {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 25px;
+        }
+
+        @media (max-width: 600px) {
+            .results { grid-template-columns: 1fr; }
+        }
+
+        .result-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 22px 16px;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 12px 28px rgba(102, 126, 234, 0.25);
+            animation: slideUp 0.6s ease-out both;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .result-card:nth-child(1) { animation-delay: 0.5s; }
+        .result-card:nth-child(2) { animation-delay: 0.6s; }
+        .result-card:nth-child(3) { animation-delay: 0.7s; }
+
+        .result-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.35);
+        }
+
+        .result-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.15), transparent);
+            transform: rotate(45deg);
+            animation: shine 3s infinite;
+        }
+
+        @keyframes shine {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        .result-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        .result-label {
+            font-size: 11px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            font-weight: 600;
+        }
+
+        .result-value {
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 5px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .result-unit {
+            font-size: 11px;
+            opacity: 0.8;
+        }
+
+        .quality-info {
+            background: linear-gradient(135deg, #f5f5f5 0%, #efefef 100%);
+            padding: 18px;
+            border-radius: 14px;
+            margin-bottom: 20px;
+            animation: slideUp 0.6s ease-out both;
+            border-left: 4px solid #667eea;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+        body.dark-mode .quality-info {
+            background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+        }
+
+        .quality-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            font-size: 13px;
+        }
+
+        body.dark-mode .quality-item {
+            border-bottom-color: rgba(148, 163, 184, 0.2);
+        }
+
+        .quality-item:last-child {
+            border-bottom: none;
+        }
+
+        .quality-label {
+            color: #666;
+            font-weight: 600;
+        }
+
+        body.dark-mode .quality-label {
+            color: #cbd5e1;
+        }
+
+        .quality-value {
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 350px;
+            margin-bottom: 20px;
+        }
+
+        .history-list {
+            max-height: 450px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            background: linear-gradient(135deg, #f5f5f5 0%, #efefef 100%);
+            padding: 14px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            border-left: 4px solid #667eea;
+            animation: slideInLeft 0.4s ease-out;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body.dark-mode .history-item {
+            background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+        }
+
+        .history-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+        }
+
+        .history-item-stats {
+            display: flex;
+            gap: 14px;
+            font-weight: 600;
+        }
+
+        .history-item-time {
+            color: #999;
+            font-size: 11px;
+        }
+
+        body.dark-mode .history-item-time {
+            color: #94a3b8;
+        }
+
+        .delete-btn {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            color: #dc2626;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+            font-weight: 600;
+        }
+
+        .delete-btn:hover {
+            background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+            transform: scale(1.05);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(8px);
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 24px;
+            padding: 32px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease-out;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        body.dark-mode .modal-content {
+            background: #1e293b;
+            color: #f0f4f8;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        body.dark-mode .modal-header {
+            border-bottom-color: rgba(148, 163, 184, 0.2);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #999;
+            transition: all 0.3s ease;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-btn:hover {
+            transform: rotate(90deg);
+            color: #333;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 11px;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        body.dark-mode .tab-btn {
+            background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+            color: #f0f4f8;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 18px;
+            border-radius: 14px;
+            text-align: center;
+            animation: slideUp 0.6s ease-out both;
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: 22px;
+            font-weight: 800;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 40px 20px;
+        }
+
+        body.dark-mode .empty-state {
+            color: #cbd5e1;
+        }
+
+        .rating-badge {
+            display: inline-block;
+            padding: 10px 18px;
+            border-radius: 12px;
+            font-weight: 700;
+            margin: 12px 0;
+            animation: slideUp 0.6s ease-out;
+            font-size: 14px;
+        }
+
+        .rating-excellent {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .rating-good {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+        }
+
+        .rating-fair {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+
+        .rating-poor {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+        }
+
+        .donate-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 24px;
+            border-radius: 16px;
+            color: white;
+            margin-top: 24px;
+            text-align: center;
+            animation: slideUp 0.6s ease-out 1s both;
+            box-shadow: 0 12px 32px rgba(102, 126, 234, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .donate-section h3 {
+            color: white;
+            margin-bottom: 8px;
+            font-size: 18px;
+            font-weight: 800;
+        }
+
+        .donate-section p {
+            font-size: 13px;
+            margin-bottom: 18px;
+            opacity: 0.95;
+        }
+
+        .donate-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .donate-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 12px;
+            border-radius: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+        }
+
+        .donate-btn:hover {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255, 255, 255, 0.6);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+
+        /* Новые стили для модального окна платежей */
+        .payment-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 500px) {
+            .payment-grid { grid-template-columns: 1fr; }
+        }
+
+        .payment-option {
+            background: linear-gradient(135deg, #f5f5f5 0%, #efefef 100%);
+            border: 2px solid transparent;
+            border-radius: 14px;
+            padding: 18px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        body.dark-mode .payment-option {
+            background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+        }
+
+        .payment-option:hover {
+            border-color: #667eea;
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(102, 126, 234, 0.2);
+        }
+
+        .payment-option.selected {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border-color: #667eea;
+            box-shadow: 0 12px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        body.dark-mode .payment-option.selected {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .payment-icon {
+            font-size: 36px;
+            margin-bottom: 10px;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        .payment-name {
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+
+        body.dark-mode .payment-option:not(.selected) .payment-name {
+            color: #f0f4f8;
+        }
+
+        .payment-desc {
+            font-size: 11px;
+            color: #999;
+        }
+
+        body.dark-mode .payment-option:not(.selected) .payment-desc {
+            color: #cbd5e1;
+        }
+
+        .amount-selector {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .amount-btn {
+            padding: 10px 18px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 13px;
+        }
+
+        body.dark-mode .amount-btn {
+            background: #334155;
+            border-color: #475569;
+            color: #f0f4f8;
+        }
+
+        .amount-btn.selected {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+            transform: scale(1.05);
+        }
+
+        .confetti {
+            position: fixed;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+            z-index: 2000;
+            animation: slideUp 0.3s ease-out;
+            border-left: 4px solid #667eea;
+            font-weight: 600;
+        }
+
+        body.dark-mode .notification {
+            background: #1e293b;
+            color: #f0f4f8;
+        }
+
+        .notification.success { border-left-color: #10b981; }
+        .notification.error { border-left-color: #ef4444; }
+        .notification.info { border-left-color: #3b82f6; }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .comparison-table th {
+            background: linear-gradient(135deg, #f5f5f5 0%, #efefef 100%);
+            padding: 12px;
+            text-align: left;
+            border-bottom: 2px solid #e0e0e0;
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        body.dark-mode .comparison-table th {
+            background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+            border-bottom-color: #475569;
+        }
+
+        .comparison-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 13px;
+        }
+
+        body.dark-mode .comparison-table td {
+            border-bottom-color: rgba(148, 163, 184, 0.2);
+        }
+
+        .input-group {
+            margin-bottom: 18px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:focus, .input-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        body.dark-mode .input-group input, body.dark-mode .input-group select {
+            background: #334155;
+            color: #f0f4f8;
+            border-color: #475569;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px;
+            border-radius: 12px;
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .feature-card-icon {
+            font-size: 28px;
+            flex-shrink: 0;
+        }
+
+        .feature-card-text {
+            flex: 1;
+        }
+
+        .feature-card-title {
+            font-weight: 700;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+
+        .feature-card-desc {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Сайдбар -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h3>⚙️ Меню</h3>
+            <button class="sidebar-close" onclick="toggleSidebar()">✕</button>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-title">🎨 Тема</div>
+            <div class="theme-selector">
+                <button class="theme-btn light active" onclick="setTheme('light')" title="Светлая">Светлая</button>
+                <button class="theme-btn dark" onclick="setTheme('dark')" title="Темная">Темная</button>
+                <button class="theme-btn ocean" onclick="setTheme('ocean')" title="Океан">Океан</button>
+                <button class="theme-btn sunset" onclick="setTheme('sunset')" title="Закат">Закат</button>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-title">📊 Быстрые ссылки</div>
+            <div class="sidebar-item" onclick="openStats()">📈 Статистика</div>
+            <div class="sidebar-item" onclick="openHistory()">📅 История</div>
+            <div class="sidebar-item" onclick="openCompare()">⚖️ Сравнение</div>
+            <div class="sidebar-item" onclick="shareResults()">🔗 Поделиться результатом</div>
+            <div class="sidebar-item" onclick="installPwa()">📱 Установить приложение</div>
+            <div class="sidebar-item" onclick="openSchedule()">⏰ Расписание</div>
+            <div class="sidebar-item" onclick="openAbout()">ℹ️ О сайте</div>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-title">💾 Данные</div>
+            <div class="sidebar-item" onclick="exportResults()">📥 Экспорт CSV</div>
+            <div class="sidebar-item" onclick="clearHistory()">🗑️ Очистить историю</div>
+        </div>
+    </div>
+
+    <!-- Заголовок -->
+    <div class="header">
+        <div class="logo">
+            <span>⚡</span> SpeedDash Pro
+        </div>
+        <div class="header-actions">
+            <button class="header-btn" onclick="shareResults()">🔗 Поделиться</button>
+            <button class="header-btn" id="installBtn" onclick="installPwa()" style="display: none;">📱 Установить</button>
+            <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+        </div>
+    </div>
+
+    <!-- Основной контент -->
+    <div class="main-container">
+        <!-- Левая колонка - Тест -->
+        <div class="card">
+            <h1>⚡ Проверка Скорости</h1>
+            <p class="subtitle">Проверьте вашу скорость интернета</p>
+            
+            <div class="status" id="status">
+                Готово к тестированию
+            </div>
+
+            <div class="button-group">
+                <button class="start-btn" id="startBtn" onclick="runTest()" style="flex: 2;">▶️ НАЧАТЬ</button>
+                <button class="reset-btn" id="resetBtn" onclick="resetResults()">⟳</button>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+
+            <div class="results">
+                <div class="result-card">
+                    <div class="result-icon">📡</div>
+                    <div class="result-label">Пинг</div>
+                    <div class="result-value" id="ping">—</div>
+                    <div class="result-unit">мс</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-icon">⬇️</div>
+                    <div class="result-label">Загрузка</div>
+                    <div class="result-value" id="download">—</div>
+                    <div class="result-unit">Mbps</div>
+                </div>
+                <div class="result-card">
+                    <div class="result-icon">⬆️</div>
+                    <div class="result-label">Выгрузка</div>
+                    <div class="result-value" id="upload">—</div>
+                    <div class="result-unit">Mbps</div>
+                </div>
+            </div>
+
+            <div class="quality-info" id="qualityInfo" style="display: none;">
+                <div id="ratingBadge"></div>
+                <div class="quality-item">
+                    <span class="quality-label">Качество:</span>
+                    <span class="quality-value" id="quality">—</span>
+                </div>
+                <div class="quality-item">
+                    <span class="quality-label">Для:</span>
+                    <span class="quality-value" id="recommendation">—</span>
+                </div>
+                <div class="quality-item">
+                    <span class="quality-label">Время:</span>
+                    <span class="quality-value" id="timestamp">—</span>
+                </div>
+            </div>
+
+            <div class="button-group" style="margin-top: 20px;">
+                <button class="history-btn" onclick="openHistory()">📊 История</button>
+                <button class="stats-btn" onclick="openStats()">📈 Статистика</button>
+            </div>
+
+            <div class="donate-section">
+                <h3>💝 Поддержать проект</h3>
+                <p>Спасибо за вашу поддержку!</p>
+                <div class="donate-buttons">
+                    <button class="donate-btn" onclick="openDonateModal(0)">Пожертвовать</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Средняя колонка - График -->
+        <div class="card">
+            <h1>📈 Анализ</h1>
+            <p class="subtitle">Графики и тренды</p>
+
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('chart')">📊 График</button>
+                <button class="tab-btn" onclick="switchTab('speed-rating')">⭐ Рейтинг</button>
+            </div>
+
+            <div id="chart" class="tab-content active">
+                <div class="chart-container">
+                    <canvas id="resultsChart"></canvas>
+                </div>
+            </div>
+
+            <div id="speed-rating" class="tab-content">
+                <div style="padding: 20px; text-align: center;">
+                    <h3 style="margin-bottom: 20px;">Классификация скорости</h3>
+                    <div class="feature-card">
+                        <div class="feature-card-icon">⚡</div>
+                        <div class="feature-card-text">
+                            <div class="feature-card-title">Отличное (100+ Mbps)</div>
+                            <div class="feature-card-desc">4K видео, онлайн игры</div>
+                        </div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-card-icon">🚀</div>
+                        <div class="feature-card-text">
+                            <div class="feature-card-title">Хорошее (50-100 Mbps)</div>
+                            <div class="feature-card-desc">HD видео, видеоконференции</div>
+                        </div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-card-icon">📹</div>
+                        <div class="feature-card-text">
+                            <div class="feature-card-title">Нормальное (25-50 Mbps)</div>
+                            <div class="feature-card-desc">Потоковое видео</div>
+                        </div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-card-icon">🐢</div>
+                        <div class="feature-card-text">
+                            <div class="feature-card-title">Низкое (&lt;25 Mbps)</div>
+                            <div class="feature-card-desc">Веб, мессенджеры</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Правая колонка - История -->
+        <div class="card">
+            <h1>📝 История</h1>
+            <p class="subtitle">Последние тесты</p>
+
+            <div id="historyList" class="history-list">
+                <div class="empty-state">📭 История пуста</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальные окна -->
+    <div class="modal" id="statsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📈 Детальная Статистика</h2>
+                <button class="close-btn" onclick="closeStats()">×</button>
+            </div>
+            <div id="statsContent">
+                <div class="empty-state">📭 Нет данных</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="historyModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📅 Полная История</h2>
+                <button class="close-btn" onclick="closeHistory()">×</button>
+            </div>
+            <div id="fullHistoryList" class="history-list" style="max-height: 500px;"></div>
+            <button class="reset-btn" onclick="closeHistory()" style="width: 100%; margin-top: 15px;">Закрыть</button>
+        </div>
+    </div>
+
+    <div class="modal" id="compareModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>⚖️ Сравнение Результатов</h2>
+                <button class="close-btn" onclick="closeCompare()">×</button>
+            </div>
+            <div id="compareContent">
+                <div class="empty-state">📭 Недостаточно данных</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="scheduleModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>⏰ Расписание Тестов</h2>
+                <button class="close-btn" onclick="closeSchedule()">×</button>
+            </div>
+            <div class="input-group">
+                <label>Автоматический тест каждые</label>
+                <select id="scheduleInterval">
+                    <option value="0">Отключить</option>
+                    <option value="5">5 минут</option>
+                    <option value="15">15 минут</option>
+                    <option value="30">30 минут</option>
+                    <option value="60">1 час</option>
+                    <option value="120">2 часа</option>
+                </select>
+            </div>
+            <button class="start-btn" onclick="setSchedule()" style="width: 100%;">Сохранить</button>
+        </div>
+    </div>
+
+    <div class="modal" id="aboutModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>ℹ️ О SpeedDash Pro</h2>
+                <button class="close-btn" onclick="closeAbout()">×</button>
+            </div>
+            <div style="text-align: center;">
+                <h3 style="color: #667eea; margin-bottom: 15px;">⚡ SpeedDash Pro</h3>
+                <p style="margin-bottom: 15px;">Самый быстрый и красивый тестер скорости интернета! 🚀</p>
+                <p style="color: #999; margin-bottom: 20px;">Версия 3.0 | 2026</p>
+                <h4 style="margin: 20px 0 10px;">✨ Особенности:</h4>
+                <div class="feature-card" style="margin-bottom: 10px;">
+                    <div class="feature-card-icon">📊</div>
+                    <div class="feature-card-text" style="text-align: left;">
+                        <div class="feature-card-title">Подробная статистика</div>
+                    </div>
+                </div>
+                <div class="feature-card" style="margin-bottom: 10px;">
+                    <div class="feature-card-icon">🎨</div>
+                    <div class="feature-card-text" style="text-align: left;">
+                        <div class="feature-card-title">Современный дизайн</div>
+                    </div>
+                </div>
+                <div class="feature-card" style="margin-bottom: 10px;">
+                    <div class="feature-card-icon">💳</div>
+                    <div class="feature-card-text" style="text-align: left;">
+                        <div class="feature-card-title">6 способов оплаты</div>
+                    </div>
+                </div>
+                <div class="feature-card" style="margin-bottom: 20px;">
+                    <div class="feature-card-icon">⚙️</div>
+                    <div class="feature-card-text" style="text-align: left;">
+                        <div class="feature-card-title">Автоматические тесты</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно платежей -->
+    <div class="modal" id="donateModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>💝 <span id="donateTitle">Поддержать проект</span></h2>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button class="lang-btn active" onclick="setDonateLanguage('ru')" style="padding: 6px 12px; border: none; background: #667eea; color: white; border-radius: 4px; cursor: pointer;">РУ</button>
+                    <button class="lang-btn" onclick="setDonateLanguage('en')" style="padding: 6px 12px; border: none; background: transparent; color: #667eea; border: 1px solid #667eea; border-radius: 4px; cursor: pointer;">EN</button>
+                    <button class="close-btn" onclick="closeDonateModal()">×</button>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-bottom: 20px;">
+                <p id="sumLabel" style="color: #666; margin-bottom: 15px;">Выберите сумму пожертвования</p>
+                
+                <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
+                    <select id="currencySelect" onchange="changeCurrency()" style="padding: 8px 12px; border: 2px solid #667eea; border-radius: 6px; background: white; color: #667eea; font-weight: 600; cursor: pointer;">
+                        <option value="usd">USD ($)</option>
+                        <option value="rub">RUB (₽)</option>
+                    </select>
+                    <input type="number" id="customAmount" onchange="updateCustomAmount()" oninput="updateCustomAmount()" placeholder="Своя сумма..." min="1" style="padding: 8px 12px; border: 2px solid #667eea; border-radius: 6px; width: 150px; font-size: 14px;">
+                </div>
+                
+                <div id="amountSelector"></div>
+                <div id="currencyInfo" style="font-size: 12px; color: #999; margin-top: 8px;">Курс: 1 USD = 90 ₽</div>
+            </div>
+
+            <p id="payLabel" style="text-align: center; color: #667eea; font-weight: 700; margin-bottom: 20px;">
+                💳 Выберите способ оплаты:
+            </p>
+
+            <div class="payment-grid">
+                <div class="payment-option" onclick="selectPayment(this, 'sbp')">
+                    <div class="payment-icon">🇷🇺</div>
+                    <div class="payment-name">СБП</div>
+                    <div class="payment-desc paymentDescSbp">Карта России</div>
+                </div>
+
+                <div class="payment-option" onclick="selectPayment(this, 'visa')">
+                    <div class="payment-icon">💳</div>
+                    <div class="payment-name">Visa</div>
+                    <div class="payment-desc paymentDescVisa">Виза</div>
+                </div>
+
+                <div class="payment-option" onclick="selectPayment(this, 'mastercard')">
+                    <div class="payment-icon">💳</div>
+                    <div class="payment-name">MasterCard</div>
+                    <div class="payment-desc paymentDescMc">Мастеркард</div>
+                </div>
+
+                <div class="payment-option" onclick="selectPayment(this, 'mir')">
+                    <div class="payment-icon">⭐</div>
+                    <div class="payment-name">МИР</div>
+                    <div class="payment-desc paymentDescMir">Национальная</div>
+                </div>
+
+                <div class="payment-option" onclick="selectPayment(this, 'card')">
+                    <div class="payment-icon">🏦</div>
+                    <div class="payment-name">Карта</div>
+                    <div class="payment-desc paymentDescCard">Любая карта</div>
+                </div>
+
+                <div class="payment-option" onclick="selectPayment(this, 'crypto')">
+                    <div class="payment-icon">₿</div>
+                    <div class="payment-name">Крипто</div>
+                    <div class="payment-desc paymentDescCrypto">BTC, ETH</div>
+                </div>
+            </div>
+
+            <button class="start-btn" id="payBtn" onclick="processPayment()" style="width: 100%; margin-top: 24px; padding: 14px;">
+                Продолжить платеж →
+            </button>
+
+            <div style="text-align: center; margin-top: 16px; color: #999; font-size: 12px;">
+                🔒 Платеж защищен и полностью безопасен
+            </div>
+        </div>
+    </div>
+
+    <script src="speedTest.js"></script>
+    <script>
+        // ===== ЗАЩИТА САЙТА =====
+        
+        // Блокируем открытие DevTools
+        document.addEventListener('keydown', (e) => {
+            if (
+                e.key === 'F12' ||
+                (e.ctrlKey && e.shiftKey && e.key === 'I') ||
+                (e.ctrlKey && e.shiftKey && e.key === 'C') ||
+                (e.ctrlKey && e.shiftKey && e.key === 'J') ||
+                (e.ctrlKey && e.key === 'u')
+            ) {
+                e.preventDefault();
+                return false;
+            }
+        });
+
+        // Блокируем контекстное меню (правая кнопка мыши)
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            return false;
+        });
+
+        // Блокируем копирование
+        document.addEventListener('copy', (e) => {
+            e.preventDefault();
+            return false;
+        });
+
+        // Блокируем вырезание
+        document.addEventListener('cut', (e) => {
+            e.preventDefault();
+            return false;
+        });
+
+        // Блокируем выделение
+        document.addEventListener('selectstart', (e) => {
+            e.preventDefault();
+            return false;
+        });
+
+        // Запрещаем выделение текста через CSS
+        document.body.style.userSelect = 'none';
+        document.body.style.webkitUserSelect = 'none';
+        document.body.style.msUserSelect = 'none';
+
+        // Отключаем Inspect Element
+        const devtoolsThreshold = { open: false, orientation: null };
+        const threshold = 160;
+        setInterval(() => {
+            if (window.outerHeight - window.innerHeight > threshold ||
+                window.outerWidth - window.innerWidth > threshold) {
+                if (!devtoolsThreshold.open) {
+                    devtoolsThreshold.open = true;
+                    document.body.innerHTML = '';
+                }
+            } else {
+                devtoolsThreshold.open = false;
+            }
+        }, 500);
+
+        // ===== КОНЕЦ ЗАЩИТЫ =====
+        
+        let chart = null;
+        let historyData = [];
+        let scheduleInterval = null;
+        let selectedPaymentMethod = null;
+        let selectedAmount = 500;
+        let donateLanguage = 'ru';
+        let currentCurrency = 'usd';
+        let exchangeRate = 90;
+        let deferredInstallPrompt = null;
+
+        function setInstallButtonVisible(visible) {
+            const installBtn = document.getElementById('installBtn');
+            if (installBtn) {
+                installBtn.style.display = visible ? 'inline-block' : 'none';
+            }
+        }
+
+        async function registerServiceWorker() {
+            if (!('serviceWorker' in navigator)) {
+                return;
+            }
+
+            try {
+                await navigator.serviceWorker.register('./service-worker.js');
+            } catch (error) {
+                console.error('Ошибка регистрации Service Worker:', error);
+            }
+        }
+
+        function getLatestResult() {
+            return historyData.length > 0 ? historyData[historyData.length - 1] : null;
+        }
+
+        function buildShareMessage() {
+            const latest = getLatestResult();
+            if (!latest) {
+                return '⚡ Я проверяю скорость интернета в SpeedDash Pro!';
+            }
+
+            return `⚡ Мой последний тест в SpeedDash Pro:\n⬇️ ${latest.download} Mbps\n⬆️ ${latest.upload} Mbps\n📡 ${latest.ping} мс`;
+        }
+
+        async function shareResults() {
+            const shareData = {
+                title: 'SpeedDash Pro',
+                text: buildShareMessage(),
+                url: window.location.href
+            };
+
+            if (navigator.share) {
+                try {
+                    await navigator.share(shareData);
+                    showNotification('Результат отправлен', 'success');
+                    return;
+                } catch (error) {
+                    if (error.name !== 'AbortError') {
+                        console.error('Ошибка Web Share API:', error);
+                        showNotification('Не удалось отправить результат', 'error');
+                    }
+                    return;
+                }
+            }
+
+            const copyText = `${shareData.text}\n${shareData.url}`;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                try {
+                    await navigator.clipboard.writeText(copyText);
+                    showNotification('Ссылка и результат скопированы', 'success');
+                    return;
+                } catch (error) {
+                    console.error('Ошибка Clipboard API:', error);
+                }
+            }
+
+            window.prompt('Скопируйте результат вручную:', copyText);
+            showNotification('Открыл поле для ручного копирования', 'info');
+        }
+
+        async function installPwa() {
+            if (!deferredInstallPrompt) {
+                showNotification('Установка пока недоступна', 'info');
+                return;
+            }
+
+            deferredInstallPrompt.prompt();
+            const { outcome } = await deferredInstallPrompt.userChoice;
+            deferredInstallPrompt = null;
+            setInstallButtonVisible(false);
+
+            if (outcome === 'accepted') {
+                showNotification('Приложение устанавливается', 'success');
+                return;
+            }
+
+            showNotification('Установка отменена', 'info');
+        }
+
+        function loadHistory() {
+            const saved = localStorage.getItem('speedTestHistory');
+            historyData = saved ? JSON.parse(saved) : [];
+            updateUI();
+        }
+
+        function saveHistory() {
+            localStorage.setItem('speedTestHistory', JSON.stringify(historyData));
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('active');
+        }
+
+        function setTheme(theme) {
+            document.body.classList.remove('dark-mode', 'ocean-theme', 'sunset-theme', 'forest-theme');
+            if (theme !== 'light') {
+                document.body.classList.add(theme + '-theme');
+            }
+            localStorage.setItem('theme', theme);
+            updateThemeButtons(theme);
+        }
+
+        function updateThemeButtons(theme) {
+            document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.theme-btn.${theme}`).classList.add('active');
+        }
+
+        function getQuality(download, upload, ping) {
+            if (download >= 100 && upload >= 20 && ping <= 30) return '✅ Отличное';
+            if (download >= 50 && upload >= 10 && ping <= 50) return '👍 Хорошее';
+            if (download >= 25 && upload >= 5 && ping <= 100) return '⚠️ Удовлетворительное';
+            return '❌ Плохое';
+        }
+
+        function getRatingClass(download) {
+            if (download >= 100) return 'rating-excellent';
+            if (download >= 50) return 'rating-good';
+            if (download >= 25) return 'rating-fair';
+            return 'rating-poor';
+        }
+
+        function getRatingText(download) {
+            if (download >= 100) return '⭐⭐⭐⭐⭐ Отличная скорость!';
+            if (download >= 50) return '⭐⭐⭐⭐ Хорошая скорость';
+            if (download >= 25) return '⭐⭐⭐ Приемлемая скорость';
+            return '⭐⭐ Слабая скорость';
+        }
+
+        function getRecommendation(download) {
+            if (download >= 100) return '4K видео, онлайн игры';
+            if (download >= 50) return 'HD видео, видеоконференции';
+            if (download >= 25) return 'Потоковое видео, соцсети';
+            return 'Веб, мессенджеры, email';
+        }
+
+        function createConfetti() {
+            for (let i = 0; i < 30; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.innerHTML = ['🎉', '🎊', '⭐', '✨', '🌟'][Math.floor(Math.random() * 5)];
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.fontSize = (Math.random() * 20 + 20) + 'px';
+                confetti.style.animation = `slideUp 2s ease-out forwards`;
+                document.body.appendChild(confetti);
+                setTimeout(() => confetti.remove(), 2000);
+            }
+        }
+
+        function updateUI() {
+            updateChart();
+            updateHistoryList();
+        }
+
+        function updateChart() {
+            const ctx = document.getElementById('resultsChart');
+            if (!ctx) return;
+            const last10 = historyData.slice(-10);
+            
+            if (chart) chart.destroy();
+            
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: last10.map((_, i) => i + 1),
+                    datasets: [
+                        {
+                            label: 'Загрузка (Mbps)',
+                            data: last10.map(d => parseFloat(d.download)),
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            tension: 0.4,
+                            fill: true,
+                            borderWidth: 3,
+                            pointRadius: 5,
+                            pointBackgroundColor: '#667eea',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2
+                        },
+                        {
+                            label: 'Выгрузка (Mbps)',
+                            data: last10.map(d => parseFloat(d.upload)),
+                            borderColor: '#764ba2',
+                            backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                            tension: 0.4,
+                            fill: true,
+                            borderWidth: 3,
+                            pointRadius: 5,
+                            pointBackgroundColor: '#764ba2',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font: { size: 12, weight: 'bold' } } }
+                    },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        function updateHistoryList() {
+            const listDiv = document.getElementById('historyList');
+            const fullListDiv = document.getElementById('fullHistoryList');
+            const last5 = historyData.slice(-5).reverse();
+
+            let html = '';
+            if (last5.length === 0) {
+                html = '<div class="empty-state">📭 История пуста</div>';
+            } else {
+                html = last5.map((item, idx) => `
+                    <div class="history-item">
+                        <div class="history-item-stats">
+                            <span>⬇️ ${item.download}</span>
+                            <span>⬆️ ${item.upload}</span>
+                            <span>📡 ${item.ping}мс</span>
+                        </div>
+                        <button class="delete-btn" onclick="deleteTest('${item.timestamp}')">✕</button>
+                    </div>
+                `).join('');
+            }
+
+            listDiv.innerHTML = html;
+            
+            if (historyData.length === 0) {
+                fullListDiv.innerHTML = '<div class="empty-state">📭 История пуста</div>';
+            } else {
+                fullListDiv.innerHTML = historyData.slice().reverse().map(item => `
+                    <div class="history-item">
+                        <div class="history-item-stats">
+                            <span>⬇️ ${item.download} Mbps</span>
+                            <span>⬆️ ${item.upload} Mbps</span>
+                            <span>📡 ${item.ping}мс</span>
+                        </div>
+                        <span class="history-item-time">${new Date(item.timestamp).toLocaleString('ru-RU')}</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tab).classList.add('active');
+            event.target.classList.add('active');
+            if (tab === 'chart' && chart) setTimeout(() => chart.resize(), 100);
+        }
+
+        function openHistory() {
+            document.getElementById('historyModal').classList.add('active');
+        }
+
+        function closeHistory() {
+            document.getElementById('historyModal').classList.remove('active');
+        }
+
+        function openStats() {
+            if (historyData.length === 0) {
+                showNotification('Недостаточно данных. Запустите тест!', 'error');
+                return;
+            }
+            const downloads = historyData.map(d => parseFloat(d.download));
+            const uploads = historyData.map(d => parseFloat(d.upload));
+            const pings = historyData.map(d => parseFloat(d.ping));
+
+            const stats = `
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-label">Средняя загрузка</div>
+                        <div class="stat-value">${(downloads.reduce((a,b)=>a+b)/downloads.length).toFixed(1)}</div>
+                        <div class="stat-label">Mbps</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Макс загрузка</div>
+                        <div class="stat-value">${Math.max(...downloads).toFixed(1)}</div>
+                        <div class="stat-label">Mbps</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Мин загрузка</div>
+                        <div class="stat-value">${Math.min(...downloads).toFixed(1)}</div>
+                        <div class="stat-label">Mbps</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Средний пинг</div>
+                        <div class="stat-value">${(pings.reduce((a,b)=>a+b)/pings.length).toFixed(1)}</div>
+                        <div class="stat-label">мс</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Средняя выгрузка</div>
+                        <div class="stat-value">${(uploads.reduce((a,b)=>a+b)/uploads.length).toFixed(1)}</div>
+                        <div class="stat-label">Mbps</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Всего тестов</div>
+                        <div class="stat-value">${historyData.length}</div>
+                        <div class="stat-label">шт</div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('statsContent').innerHTML = stats;
+            document.getElementById('statsModal').classList.add('active');
+        }
+
+        function closeStats() {
+            document.getElementById('statsModal').classList.remove('active');
+        }
+
+        function openCompare() {
+            if (historyData.length < 2) {
+                showNotification('Нужно минимум 2 теста для сравнения', 'error');
+                return;
+            }
+            
+            const first = historyData[0];
+            const last = historyData[historyData.length - 1];
+            const downloadDiff = ((parseFloat(last.download) - parseFloat(first.download)) / parseFloat(first.download) * 100).toFixed(1);
+
+            const html = `
+                <table class="comparison-table">
+                    <tr>
+                        <th>Параметр</th>
+                        <th>Первый тест</th>
+                        <th>Последний тест</th>
+                        <th>Изменение</th>
+                    </tr>
+                    <tr>
+                        <td>Загрузка</td>
+                        <td>${first.download} Mbps</td>
+                        <td>${last.download} Mbps</td>
+                        <td style="color: ${downloadDiff > 0 ? '#10b981' : '#ef4444'}">${downloadDiff > 0 ? '+' : ''}${downloadDiff}%</td>
+                    </tr>
+                    <tr>
+                        <td>Выгрузка</td>
+                        <td>${first.upload} Mbps</td>
+                        <td>${last.upload} Mbps</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>Пинг</td>
+                        <td>${first.ping} мс</td>
+                        <td>${last.ping} мс</td>
+                        <td></td>
+                    </tr>
+                </table>
+            `;
+            document.getElementById('compareContent').innerHTML = html;
+            document.getElementById('compareModal').classList.add('active');
+        }
+
+        function closeCompare() {
+            document.getElementById('compareModal').classList.remove('active');
+        }
+
+        function openSchedule() {
+            document.getElementById('scheduleModal').classList.add('active');
+        }
+
+        function closeSchedule() {
+            document.getElementById('scheduleModal').classList.remove('active');
+        }
+
+        function setSchedule() {
+            const interval = parseInt(document.getElementById('scheduleInterval').value);
+            if (scheduleInterval) clearInterval(scheduleInterval);
+            if (interval > 0) {
+                scheduleInterval = setInterval(runTest, interval * 60000);
+                showNotification(`Автотестирование каждые ${interval} мин`, 'info');
+            } else {
+                showNotification('Автотестирование отключено', 'info');
+            }
+            closeSchedule();
+        }
+
+        function openAbout() {
+            document.getElementById('aboutModal').classList.add('active');
+        }
+
+        function closeAbout() {
+            document.getElementById('aboutModal').classList.remove('active');
+        }
+
+        function openDonateModal(amount) {
+            selectedAmount = amount;
+            selectedPaymentMethod = null;
+            donateLanguage = 'ru'; // Reset to Russian by default
+            currentCurrency = 'usd';
+            
+            document.getElementById('currencySelect').value = 'usd';
+            document.getElementById('customAmount').value = '';
+            
+            updateAmountButtons();
+            
+            document.querySelectorAll('.payment-option').forEach(el => el.classList.remove('selected'));
+            
+            // Initialize language buttons
+            const langBtns = document.querySelectorAll('.lang-btn');
+            langBtns[0].classList.add('active');
+            langBtns[0].style.background = '#667eea';
+            langBtns[0].style.color = 'white';
+            langBtns[1].style.background = 'transparent';
+            langBtns[1].style.color = '#667eea';
+            langBtns[1].style.border = '1px solid #667eea';
+            
+            document.getElementById('donateModal').classList.add('active');
+        }
+        
+        function updateAmountButtons() {
+            const amounts = [5, 10, 25, 50];
+            const selector = document.getElementById('amountSelector');
+            
+            selector.innerHTML = amounts.map((amt, idx) => {
+                const actualAmount = currentCurrency === 'usd' ? amt * 100 : Math.round(amt * exchangeRate * 100);
+                return `<button class="amount-btn ${idx === 0 ? 'selected' : ''}" onclick="selectAmount(this, ${actualAmount})">•</button>`;
+            }).join('');
+            
+            // Update selected amount to first button value
+            selectedAmount = amounts[0] * 100;
+        }
+        
+        function changeCurrency() {
+            currentCurrency = document.getElementById('currencySelect').value;
+            updateAmountButtons();
+            
+            if (currentCurrency === 'rub') {
+                document.getElementById('currencyInfo').textContent = `Курс: 1 USD = ${exchangeRate} ₽`;
+            } else {
+                document.getElementById('currencyInfo').textContent = `Rate: 1 USD = ${exchangeRate} RUB`;
+            }
+        }
+
+        function closeDonateModal() {
+            document.getElementById('donateModal').classList.remove('active');
+        }
+
+        function setDonateLanguage(lang) {
+            donateLanguage = lang;
+            
+            // Обновляем кнопки языка
+            document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            event.target.style.background = '#667eea';
+            event.target.style.color = 'white';
+            event.target.style.border = 'none';
+            
+            const otherBtn = Array.from(document.querySelectorAll('.lang-btn')).find((b) => !b.classList.contains('active'));
+            if (otherBtn) {
+                otherBtn.style.background = 'transparent';
+                otherBtn.style.color = '#667eea';
+                otherBtn.style.border = '1px solid #667eea';
+            }
+            
+            // Обновляем текст
+            if (lang === 'ru') {
+                document.getElementById('donateTitle').textContent = 'Поддержать проект';
+                document.getElementById('sumLabel').textContent = 'Выберите сумму пожертвования';
+                document.getElementById('payLabel').textContent = '💳 Выберите способ оплаты:';
+                document.getElementById('payBtn').textContent = 'Продолжить платеж →';
+                document.querySelector('.paymentDescSbp').textContent = 'Карта России';
+                document.querySelector('.paymentDescVisa').textContent = 'Виза';
+                document.querySelector('.paymentDescMc').textContent = 'Мастеркард';
+                document.querySelector('.paymentDescMir').textContent = 'Национальная';
+                document.querySelector('.paymentDescCard').textContent = 'Любая карта';
+                document.querySelector('.paymentDescCrypto').textContent = 'BTC, ETH';
+            } else {
+                document.getElementById('donateTitle').textContent = 'Support Project';
+                document.getElementById('sumLabel').textContent = 'Select donation amount';
+                document.getElementById('payLabel').textContent = '💳 Select payment method:';
+                document.getElementById('payBtn').textContent = 'Continue payment →';
+                document.querySelector('.paymentDescSbp').textContent = 'Russian Card';
+                document.querySelector('.paymentDescVisa').textContent = 'Visa Card';
+                document.querySelector('.paymentDescMc').textContent = 'MasterCard';
+                document.querySelector('.paymentDescMir').textContent = 'National System';
+                document.querySelector('.paymentDescCard').textContent = 'Any Card';
+                document.querySelector('.paymentDescCrypto').textContent = 'BTC, ETH';
+            }
+        }
+
+        function selectAmount(btn, amount) {
+            selectedAmount = amount;
+            document.querySelectorAll('.amount-btn').forEach(el => el.classList.remove('selected'));
+            btn.classList.add('selected');
+            document.getElementById('customAmount').value = ''; // Clear custom input
+        }
+        
+        function updateCustomAmount() {
+            const customInput = document.getElementById('customAmount');
+            if (customInput.value) {
+                const amount = parseFloat(customInput.value) * 100;
+                selectedAmount = amount;
+                document.querySelectorAll('.amount-btn').forEach(el => el.classList.remove('selected'));
+            }
+        }
+
+        function selectPayment(element, method) {
+            selectedPaymentMethod = method;
+            document.querySelectorAll('.payment-option').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+        }
+
+        async function processPayment() {
+            if (!selectedPaymentMethod) {
+                showNotification('Выберите способ оплаты', 'error');
+                return;
+            }
+
+            const payBtn = document.getElementById('payBtn');
+            payBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/create-payment-session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        amount: Math.round(selectedAmount),
+                        currency: currentCurrency,
+                        method: selectedPaymentMethod,
+                        language: donateLanguage
+                    })
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || 'Ошибка инициализации платежа');
+                }
+
+                closeDonateModal();
+
+                if (data.provider === 'link') {
+                    window.location.href = data.url;
+                    return;
+                }
+
+                if (data.provider === 'stripe') {
+                    if (!window.Stripe) {
+                        throw new Error('Stripe SDK не загружен');
+                    }
+
+                    const stripe = window.Stripe(data.publishableKey);
+                    const result = await stripe.redirectToCheckout({ sessionId: data.sessionId });
+                    if (result.error) {
+                        throw new Error(result.error.message || 'Ошибка перенаправления в Stripe');
+                    }
+                    return;
+                }
+
+                throw new Error('Неизвестный провайдер платежа');
+            } catch (error) {
+                console.error(error);
+                showNotification(`Ошибка платежа: ${error.message}`, 'error');
+            } finally {
+                payBtn.disabled = false;
+            }
+        }
+
+        function deleteTest(timestamp) {
+            historyData = historyData.filter(d => d.timestamp !== timestamp);
+            saveHistory();
+            updateUI();
+            showNotification('Тест удален', 'success');
+        }
+
+        function clearHistory() {
+            if (confirm('Очистить всю историю?')) {
+                historyData = [];
+                saveHistory();
+                updateUI();
+                showNotification('История очищена', 'success');
+            }
+        }
+
+        function exportResults() {
+            if (historyData.length === 0) { 
+                showNotification('Нечего экспортировать!', 'error'); 
+                return; 
+            }
+            let csv = 'Дата,Загрузка (Mbps),Выгрузка (Mbps),Пинг (мс)\n';
+            historyData.forEach(item => {
+                csv += `"${new Date(item.timestamp).toLocaleString('ru-RU')}",${item.download},${item.upload},${item.ping}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `speedtest-${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+            showNotification('Данные экспортированы', 'success');
+        }
+
+        function showNotification(message, type = 'info') {
+            const notif = document.createElement('div');
+            notif.className = `notification ${type}`;
+            notif.textContent = message;
+            document.body.appendChild(notif);
+            setTimeout(() => notif.remove(), 3000);
+        }
+
+        async function runTest() {
+            const startBtn = document.getElementById('startBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const statusDiv = document.getElementById('status');
+            const progressFill = document.getElementById('progressFill');
+            const qualityInfo = document.getElementById('qualityInfo');
+
+            startBtn.disabled = true;
+            resetBtn.disabled = true;
+            statusDiv.className = 'status testing';
+            statusDiv.innerHTML = '<span class="spinner"></span> Тестирование...';
+            progressFill.style.width = '0%';
+            qualityInfo.style.display = 'none';
+            document.getElementById('sidebar').classList.remove('active');
+
+            const speedTest = new InternetSpeedTest();
+            let results = {};
+
+            try {
+                progressFill.style.width = '25%';
+                statusDiv.innerHTML = '<span class="spinner"></span> 📡 Пинг...';
+                await speedTest.measurePing();
+                results.ping = speedTest.results.ping;
+                animateValue('ping', 0, parseFloat(results.ping), 600);
+
+                progressFill.style.width = '50%';
+                statusDiv.innerHTML = '<span class="spinner"></span> ⬇️ Загрузка...';
+                await speedTest.measureDownloadSpeed();
+                results.download = speedTest.results.downloadSpeed;
+                animateValue('download', 0, parseFloat(results.download), 600);
+
+                progressFill.style.width = '75%';
+                statusDiv.innerHTML = '<span class="spinner"></span> ⬆️ Выгрузка...';
+                await speedTest.measureUploadSpeed();
+                results.upload = speedTest.results.uploadSpeed;
+                animateValue('upload', 0, parseFloat(results.upload), 600);
+
+                const resultItem = {
+                    timestamp: new Date().toISOString(),
+                    ping: results.ping,
+                    download: results.download,
+                    upload: results.upload
+                };
+                historyData.push(resultItem);
+                saveHistory();
+
+                const quality = getQuality(parseFloat(results.download), parseFloat(results.upload), parseFloat(results.ping));
+                const recommendation = getRecommendation(parseFloat(results.download));
+                const ratingText = getRatingText(parseFloat(results.download));
+                const ratingClass = getRatingClass(parseFloat(results.download));
+                
+                if (quality.includes('✅') || quality.includes('👍')) {
+                    createConfetti();
+                }
+
+                document.getElementById('ratingBadge').innerHTML = `<div class="rating-badge ${ratingClass}">${ratingText}</div>`;
+                document.getElementById('quality').textContent = quality;
+                document.getElementById('recommendation').textContent = recommendation;
+                document.getElementById('timestamp').textContent = new Date().toLocaleString('ru-RU');
+                qualityInfo.style.display = 'block';
+
+                progressFill.style.width = '100%';
+                statusDiv.className = 'status completed';
+                statusDiv.textContent = '✅ Завершено!';
+                updateUI();
+                showNotification('Тест завершен успешно!', 'success');
+
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = '❌ Ошибка: ' + error.message;
+                console.error(error);
+                showNotification('Ошибка при тестировании', 'error');
+            } finally {
+                startBtn.disabled = false;
+                resetBtn.disabled = false;
+            }
+        }
+
+        function animateValue(id, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const value = Math.floor(progress * (end - start) + start);
+                document.getElementById(id).textContent = value;
+                if (progress < 1) {
+                    requestAnimationFrame(step);
+                }
+            };
+            requestAnimationFrame(step);
+        }
+
+        function resetResults() {
+            document.getElementById('ping').textContent = '—';
+            document.getElementById('download').textContent = '—';
+            document.getElementById('upload').textContent = '—';
+            document.getElementById('qualityInfo').style.display = 'none';
+            document.getElementById('status').className = 'status';
+            document.getElementById('status').textContent = 'Готово к тестированию';
+            document.getElementById('progressFill').style.width = '0%';
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const theme = localStorage.getItem('theme') || 'light';
+            setTheme(theme);
+            loadHistory();
+            registerServiceWorker();
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+            setInstallButtonVisible(!isStandalone && !!deferredInstallPrompt);
+
+            const params = new URLSearchParams(window.location.search);
+            const paymentStatus = params.get('payment');
+            if (paymentStatus === 'success') {
+                showNotification('Спасибо! Платеж успешно завершен 💖', 'success');
+                createConfetti();
+            }
+            if (paymentStatus === 'cancel') {
+                showNotification('Платеж отменен', 'info');
+            }
+
+            const shared = params.get('shared');
+            const sharedText = params.get('text');
+            const sharedUrl = params.get('url');
+            if (shared === '1' && (sharedText || sharedUrl)) {
+                showNotification('Контент получен через Share Target', 'success');
+                console.log('Shared payload:', { text: sharedText, url: sharedUrl });
+            }
+        });
+
+        window.addEventListener('beforeinstallprompt', (event) => {
+            event.preventDefault();
+            deferredInstallPrompt = event;
+            setInstallButtonVisible(true);
+        });
+
+        window.addEventListener('appinstalled', () => {
+            deferredInstallPrompt = null;
+            setInstallButtonVisible(false);
+            showNotification('Приложение установлено 🎉', 'success');
+        });
+
+        window.onclick = function(event) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target === modal) modal.classList.remove('active');
+            });
+        }
+    </script>
+</body>
+</html>

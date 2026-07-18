@@ -29,14 +29,14 @@ Set these exact keys:
 
 - NODE_ENV=production
 - PORT=10000
-- APP_BASE_URL=https://YOUR-RENDER-DOMAIN.onrender.com
-- ALLOWED_ORIGINS=https://YOUR-RENDER-DOMAIN.onrender.com
+- APP_BASE_URL=https://www.speeddash-pro.com
+- ALLOWED_ORIGINS=https://www.speeddash-pro.com,https://speeddash-pro.com
 
 For Stripe (real card payments):
 - STRIPE_SECRET_KEY=sk_live_or_test_xxx
 - STRIPE_PUBLISHABLE_KEY=pk_live_or_test_xxx
-- STRIPE_SUCCESS_URL=https://YOUR-RENDER-DOMAIN.onrender.com/index.html?payment=success
-- STRIPE_CANCEL_URL=https://YOUR-RENDER-DOMAIN.onrender.com/index.html?payment=cancel
+- STRIPE_SUCCESS_URL=https://www.speeddash-pro.com/index.html?payment=success
+- STRIPE_CANCEL_URL=https://www.speeddash-pro.com/index.html?payment=cancel
 
 For direct payment links (SBP/MIR/Crypto):
 - PAYMENT_LINK_SBP=https://your-provider/sbp?amount={amount}&currency={currency}

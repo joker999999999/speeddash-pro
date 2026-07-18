@@ -47,6 +47,7 @@ app.use(helmet({
         directives: {
             defaultSrc: ["'self'"],
             scriptSrc: ["'self'", "'unsafe-inline'", 'https://cdnjs.cloudflare.com', 'https://js.stripe.com'],
+            scriptSrcAttr: ["'unsafe-inline'"],
             styleSrc: ["'self'", "'unsafe-inline'", 'https://cdnjs.cloudflare.com'],
             imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
             fontSrc: ["'self'", 'data:', 'https://cdnjs.cloudflare.com'],

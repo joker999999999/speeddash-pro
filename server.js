@@ -136,8 +136,8 @@ app.use('/api/create-payment-session', paymentLimiter);
 app.use('/api/contact-developer', contactLimiter);
 app.use('/share', shareLimiter);
 
-// Фронтенд развёрнут в Render Static Site — статику здесь не раздаём
-// app.use(express.static(...))
+// Фронтенд раздаётся этим же сервером (same-origin)
+app.use(express.static(rootDir, { extensions: ['html'] }));
 
 function normalizeOrigin(value) {
     try {
@@ -798,6 +798,10 @@ app.post('/api/contact-developer', async (req, res) => {
 });
 
 // catch-all удалён: фронтенд обслуживается Render Static Site
+
+app.get('*', (_req, res) => {
+    res.sendFile(path.join(rootDir, 'index.html'));
+});
 
 app.use((err, _req, res, next) => {
     if (err && err.type === 'entity.too.large') {

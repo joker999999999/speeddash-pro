@@ -52,6 +52,8 @@ app.use(express.urlencoded({ extended: false }));
 
 // Статические файлы больше не обслуживаются здесь — фронтенд развёрнут на Render Static Site
 // При локальной разработке открывайте index.html напрямую через браузер или Live Server.
+
+app.use(helmet({
     contentSecurityPolicy: {
         useDefaults: true,
         directives: {

@@ -2082,7 +2082,7 @@
 
     <script src="speedTest.js"></script>
     <script>
-        // DevTools и стандартные действия браузера не ограничиваются.
+        // F12, Ctrl+Shift+I/J/C, Ctrl+U и правая кнопка мыши заблокированы.
 
         // Базовый URL бэкенда. При same-origin деплое — пустая строка.
         // Значение читается из config.js, который генерируется buildCommand при деплое на Render.
@@ -3914,10 +3914,32 @@
             showNotification('Приложение установлено 🎉', 'success');
         });
 
+        // Блокировка DevTools
         window.addEventListener('keydown', (event) => {
             if (event.key === 'Escape') {
                 closeSidebar();
             }
+            // F12
+            if (event.key === 'F12') {
+                event.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+I / Ctrl+Shift+J / Ctrl+Shift+C
+            if (event.ctrlKey && event.shiftKey && ['I','i','J','j','C','c'].includes(event.key)) {
+                event.preventDefault();
+                return false;
+            }
+            // Ctrl+U (просмотр исходного кода)
+            if (event.ctrlKey && ['U','u'].includes(event.key)) {
+                event.preventDefault();
+                return false;
+            }
+        });
+
+        // Блокировка правой кнопки мыши
+        document.addEventListener('contextmenu', (event) => {
+            event.preventDefault();
+            return false;
         });
 
         window.onclick = function(event) {

@@ -4,6 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#667eea">
+    <meta name="description" content="SpeedDash Pro: проверка скорости интернета в 3 этапа с графиком в реальном времени, историей замеров и расширенными сетевыми данными.">
+    <meta name="keywords" content="speed test, проверка скорости, ping, download, upload, internet speed, SpeedDash Pro">
+    <meta name="robots" content="index, follow">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="⚡ SpeedDash Pro - Мгновенная Проверка Скорости">
+    <meta property="og:description" content="Пинг, загрузка и выгрузка в реальном времени, история тестов и детальные сетевые данные.">
+    <meta property="og:site_name" content="SpeedDash Pro">
+    <meta property="og:locale" content="ru_RU">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="⚡ SpeedDash Pro - Мгновенная Проверка Скорости">
+    <meta name="twitter:description" content="Скорость интернета в 3 этапа с live-графиком и историей.">
+    <link rel="canonical" href="https://www.speeddash-pro.com/index.html">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -11,6 +23,7 @@
     <link rel="manifest" href="manifest.json">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://js.stripe.com/v3/"></script>
+    <script src="config.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -616,6 +629,186 @@
         .status.error {
             background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
             color: #991b1b;
+        }
+
+        .test-stages {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .stage-chip {
+            border-radius: 12px;
+            padding: 10px 8px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.35px;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            color: #334155;
+            background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+        }
+
+        .stage-chip.active {
+            color: #1d4ed8;
+            border-color: rgba(59, 130, 246, 0.45);
+            box-shadow: 0 8px 22px rgba(59, 130, 246, 0.22);
+            transform: translateY(-1px);
+        }
+
+        .stage-chip.done {
+            color: #0f766e;
+            border-color: rgba(16, 185, 129, 0.5);
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+        }
+
+        body.dark-mode .stage-chip {
+            color: #e2e8f0;
+            border-color: rgba(148, 163, 184, 0.28);
+            background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+        }
+
+        body.dark-mode .stage-chip.active {
+            color: #bfdbfe;
+            border-color: rgba(59, 130, 246, 0.6);
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.28);
+        }
+
+        body.dark-mode .stage-chip.done {
+            color: #6ee7b7;
+            border-color: rgba(16, 185, 129, 0.55);
+            background: linear-gradient(135deg, #0f172a 0%, #064e3b 100%);
+        }
+
+        .live-chart-panel {
+            background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+            border-radius: 14px;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            padding: 12px;
+            margin-bottom: 18px;
+        }
+
+        .live-chart-title {
+            font-size: 12px;
+            font-weight: 800;
+            color: #475569;
+            margin-bottom: 8px;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+
+        .live-chart-wrap {
+            position: relative;
+            height: 150px;
+        }
+
+        body.dark-mode .live-chart-panel {
+            background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+            border-color: rgba(148, 163, 184, 0.24);
+        }
+
+        body.dark-mode .live-chart-title {
+            color: #cbd5e1;
+        }
+
+        .network-details {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 18px;
+        }
+
+        .network-details-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .network-details-title {
+            color: #334155;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 0;
+        }
+
+        .network-refresh-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 2px 6px;
+            border-radius: 6px;
+            opacity: 0.6;
+            transition: opacity 0.2s, transform 0.3s;
+            line-height: 1;
+        }
+
+        .network-refresh-btn:hover { opacity: 1; transform: rotate(30deg); }
+        .network-refresh-btn:disabled { cursor: default; }
+        .network-refresh-btn.spinning { animation: spin 0.7s linear infinite; opacity: 0.9; }
+
+        .network-details-value.ip-copy {
+            cursor: pointer;
+            text-decoration: underline dotted rgba(100,116,139,0.6);
+        }
+
+        .network-details-value.ip-copy:hover { color: #667eea; }
+
+        .network-details-value.net-loading {
+            opacity: 0.45;
+            animation: net-pulse 1.1s ease-in-out infinite;
+        }
+
+        @keyframes net-pulse {
+            0%, 100% { opacity: 0.45; }
+            50%       { opacity: 0.75; }
+        }
+
+        .network-details-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 10px;
+            font-size: 12px;
+            padding: 6px 0;
+            border-bottom: 1px dashed rgba(148, 163, 184, 0.4);
+        }
+
+        .network-details-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .network-details-label {
+            color: #64748b;
+            font-weight: 700;
+        }
+
+        .network-details-value {
+            color: #1e293b;
+            font-weight: 700;
+            text-align: right;
+            word-break: break-word;
+        }
+
+        body.dark-mode .network-details {
+            background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+            border-color: rgba(148, 163, 184, 0.25);
+        }
+
+        body.dark-mode .network-details-title,
+        body.dark-mode .network-details-value {
+            color: #e2e8f0;
+        }
+
+        body.dark-mode .network-details-label {
+            color: #94a3b8;
         }
 
         .spinner {
@@ -1278,6 +1471,47 @@
         .notification.error { border-left-color: #ef4444; }
         .notification.info { border-left-color: #3b82f6; }
 
+        /* Баннер холодного старта */
+        #coldStartBanner {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 3000;
+            background: linear-gradient(90deg, #f59e0b, #d97706);
+            color: #fff;
+            text-align: center;
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            box-shadow: 0 2px 12px rgba(245,158,11,0.35);
+            animation: slideDown 0.4s ease-out;
+        }
+        @keyframes slideDown {
+            from { transform: translateY(-100%); opacity: 0; }
+            to   { transform: translateY(0);    opacity: 1; }
+        }
+        #coldStartBanner.hide {
+            animation: slideUp2 0.4s ease-in forwards;
+        }
+        @keyframes slideUp2 {
+            from { transform: translateY(0);    opacity: 1; }
+            to   { transform: translateY(-100%); opacity: 0; }
+        }
+        #coldStartBanner .cold-spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255,255,255,0.5);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
         .comparison-table {
             width: 100%;
             border-collapse: collapse;
@@ -1380,6 +1614,12 @@
     </style>
 </head>
 <body>
+    <!-- Баннер холодного старта -->
+    <div id="coldStartBanner">
+        <span class="cold-spinner"></span>
+        <span id="coldStartText">Сервер просыпается... Подождите около 30 сек.</span>
+    </div>
+
     <!-- Сайдбар -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
@@ -1443,6 +1683,12 @@
                 Готово к тестированию
             </div>
 
+            <div class="test-stages" id="testStages">
+                <div class="stage-chip" id="stagePing">1) Пинг</div>
+                <div class="stage-chip" id="stageDownload">2) Загрузка</div>
+                <div class="stage-chip" id="stageUpload">3) Выгрузка</div>
+            </div>
+
             <div class="button-group">
                 <button class="start-btn" id="startBtn" onclick="runTest()" style="flex: 2;">▶️ НАЧАТЬ</button>
                 <button class="reset-btn" id="resetBtn" onclick="resetResults()">⟳</button>
@@ -1450,6 +1696,13 @@
 
             <div class="progress-bar">
                 <div class="progress-fill" id="progressFill"></div>
+            </div>
+
+            <div class="live-chart-panel">
+                <div class="live-chart-title" id="liveChartTitle">Live: скорость во время теста</div>
+                <div class="live-chart-wrap">
+                    <canvas id="liveResultsChart"></canvas>
+                </div>
             </div>
 
             <div class="results">
@@ -1470,6 +1723,29 @@
                     <div class="result-label" id="labelUpload">Выгрузка</div>
                     <div class="result-value" id="upload">—</div>
                     <div class="result-unit">Mbps</div>
+                </div>
+            </div>
+
+            <div class="network-details" id="networkDetails">
+                <div class="network-details-header">
+                    <div class="network-details-title" id="networkDetailsTitle">Расширенные сетевые данные</div>
+                    <button class="network-refresh-btn" id="networkRefreshBtn" onclick="refreshNetworkInfo()" title="Обновить данные">🔄</button>
+                </div>
+                <div class="network-details-row">
+                    <span class="network-details-label" id="networkIpLabel">IP:</span>
+                    <span class="network-details-value" id="networkIpValue">—</span>
+                </div>
+                <div class="network-details-row">
+                    <span class="network-details-label" id="networkIspLabel">Провайдер:</span>
+                    <span class="network-details-value" id="networkIspValue">—</span>
+                </div>
+                <div class="network-details-row">
+                    <span class="network-details-label" id="networkLocationLabel">Местоположение:</span>
+                    <span class="network-details-value" id="networkLocationValue">—</span>
+                </div>
+                <div class="network-details-row">
+                    <span class="network-details-label" id="networkServerLabel">Сервер замера:</span>
+                    <span class="network-details-value" id="networkServerValue">—</span>
                 </div>
             </div>
 
@@ -1645,7 +1921,7 @@
             <div style="text-align: center;">
                 <h3 style="color: #667eea; margin-bottom: 15px;">⚡ SpeedDash Pro</h3>
                 <p style="margin-bottom: 15px;">Самый быстрый и красивый тестер скорости интернета! 🚀</p>
-                <p style="color: #999; margin-bottom: 20px;">Версия 3.0 | 2026</p>
+                <p style="color: #999; margin-bottom: 20px;">Версия 3.1 | 2026</p>
                 <h4 style="margin: 20px 0 10px;">✨ Особенности:</h4>
                 <div class="feature-card" style="margin-bottom: 10px;">
                     <div class="feature-card-icon">📊</div>
@@ -1795,7 +2071,7 @@
             </div>
 
             <button class="start-btn" id="payBtn" onclick="processPayment()" style="width: 100%; margin-top: 24px; padding: 14px;">
-                Продолжить платеж →
+                Оплатить $5.00 →
             </button>
 
             <div style="text-align: center; margin-top: 16px; color: #999; font-size: 12px;">
@@ -1807,9 +2083,18 @@
     <script src="speedTest.js"></script>
     <script>
         // DevTools и стандартные действия браузера не ограничиваются.
+
+        // Базовый URL бэкенда. При same-origin деплое — пустая строка.
+        // Значение читается из config.js, который генерируется buildCommand при деплое на Render.
+        function getApiUrl(path) {
+            const base = (window.API_BASE_URL || '').replace(/\/$/, '');
+            return base + path;
+        }
         
         let chart = null;
+        let liveChart = null;
         let historyData = [];
+        let networkSnapshot = null;
         let scheduleInterval = null;
         let selectedPaymentMethod = null;
         let selectedAmount = 500;
@@ -1819,6 +2104,8 @@
         let exchangeRate = 90;
         let exchangeRateUpdatedAt = 0;
         let deferredInstallPrompt = null;
+        let warmupDone = false;
+        let livePointIndex = 0;
 
         const mainI18n = {
             ru: {
@@ -1892,6 +2179,15 @@
                 tabRatingBtn: '⭐ Рейтинг',
                 historyTitle: '📝 История',
                 historySubtitle: 'Последние тесты',
+                stagePing: '1) Пинг',
+                stageDownload: '2) Загрузка',
+                stageUpload: '3) Выгрузка',
+                liveChartTitle: 'Live: скорость во время теста',
+                networkDetailsTitle: 'Расширенные сетевые данные',
+                networkIpLabel: 'IP:',
+                networkIspLabel: 'Провайдер:',
+                networkLocationLabel: 'Местоположение:',
+                networkServerLabel: 'Сервер замера:',
                 emptyHistory: '📭 История пуста',
                 testing: '<span class="spinner"></span> Тестирование...',
                 pingStatus: '<span class="spinner"></span> 📡 Пинг...',
@@ -1971,6 +2267,15 @@
                 tabRatingBtn: '⭐ Rating',
                 historyTitle: '📝 History',
                 historySubtitle: 'Recent tests',
+                stagePing: '1) Ping',
+                stageDownload: '2) Download',
+                stageUpload: '3) Upload',
+                liveChartTitle: 'Live: speed during test',
+                networkDetailsTitle: 'Extended network data',
+                networkIpLabel: 'IP:',
+                networkIspLabel: 'Provider:',
+                networkLocationLabel: 'Location:',
+                networkServerLabel: 'Measurement server:',
                 emptyHistory: '📭 History is empty',
                 testing: '<span class="spinner"></span> Testing...',
                 pingStatus: '<span class="spinner"></span> 📡 Ping...',
@@ -2009,7 +2314,9 @@
                 'qualityLabel', 'forLabel', 'timeLabel', 'historyBtn', 'statsBtn',
                 'donateMainTitle', 'donateMainSubtitle', 'donateMainBtn',
                 'analysisTitle', 'analysisSubtitle', 'tabChartBtn', 'tabRatingBtn',
-                'historyTitle', 'historySubtitle'
+                'historyTitle', 'historySubtitle',
+                'stagePing', 'stageDownload', 'stageUpload',
+                'liveChartTitle', 'networkDetailsTitle', 'networkIpLabel', 'networkIspLabel', 'networkLocationLabel', 'networkServerLabel'
             ];
 
             ids.forEach((id) => {
@@ -2046,6 +2353,16 @@
                 mainLangRuBtn.classList.toggle('active', appLanguage === 'ru');
                 mainLangEnBtn.classList.toggle('active', appLanguage === 'en');
             }
+
+            if (liveChart?.data?.datasets?.[0]) {
+                liveChart.data.datasets[0].label = appLanguage === 'en' ? 'Download (Mbps)' : 'Загрузка (Мбит/с)';
+                if (liveChart.data.datasets[1]) {
+                    liveChart.data.datasets[1].label = appLanguage === 'en' ? 'Upload (Mbps)' : 'Выгрузка (Мбит/с)';
+                }
+                liveChart.update('none');
+            }
+
+            applyNetworkSnapshot(networkSnapshot);
 
             updateHistoryList();
         }
@@ -2092,6 +2409,348 @@
             }
         }
 
+        function trUnknown() {
+            return appLanguage === 'en' ? 'Unknown' : 'Недоступно';
+        }
+
+        function applyNetworkSnapshot(snapshot) {
+            networkSnapshot = snapshot || null;
+
+            const ipNode       = document.getElementById('networkIpValue');
+            const ispNode      = document.getElementById('networkIspValue');
+            const locationNode = document.getElementById('networkLocationValue');
+            const serverNode   = document.getElementById('networkServerValue');
+
+            if (!ipNode || !ispNode || !serverNode) return;
+
+            const unknown  = trUnknown();
+            const localNet = appLanguage === 'en' ? 'Local network' : 'Локальная сеть';
+
+            if (!networkSnapshot) {
+                ipNode.textContent       = unknown;
+                ispNode.textContent      = unknown;
+                if (locationNode) locationNode.textContent = unknown;
+                serverNode.textContent   = unknown;
+                ipNode.classList.remove('ip-copy');
+                ipNode.onclick = null;
+                return;
+            }
+
+            const isLocal = networkSnapshot.isLocal || false;
+
+            ispNode.textContent    = isLocal ? localNet : (networkSnapshot.isp      || unknown);
+            if (locationNode) locationNode.textContent = isLocal ? localNet : (networkSnapshot.location || unknown);
+            serverNode.textContent = networkSnapshot.serverLocation || unknown;
+
+            // IP — кликабелен для копирования
+            const ip = networkSnapshot.ip || '';
+            ipNode.textContent = ip || (isLocal ? '127.0.0.1' : unknown);
+            if (ip) {
+                ipNode.classList.add('ip-copy');
+                ipNode.title   = appLanguage === 'en' ? 'Click to copy' : 'Нажмите чтобы скопировать';
+                ipNode.onclick = () => {
+                    navigator.clipboard?.writeText(ip).catch(() => {});
+                    showNotification(appLanguage === 'en' ? 'IP copied!' : 'IP скопирован!', 'success');
+                };
+            } else {
+                ipNode.classList.remove('ip-copy');
+                ipNode.title   = '';
+                ipNode.onclick = null;
+            }
+        }
+
+        function setNetworkLoadingState(loading) {
+            const ids = ['networkIpValue', 'networkIspValue', 'networkLocationValue', 'networkServerValue'];
+            const text = appLanguage === 'en' ? '…' : '…';
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                if (loading) {
+                    el.textContent = text;
+                    el.classList.add('net-loading');
+                } else {
+                    el.classList.remove('net-loading');
+                }
+            });
+        }
+
+        // Браузерный запрос к геолокации — браузер виден реальный IP пользователя, а не IP дата-центра Render
+        async function fetchGeoFromBrowser() {
+            const providers = [
+                async () => {
+                    const d = await fetch('https://ipapi.co/json/', { headers: { Accept: 'application/json' } }).then(r => r.json());
+                    if (d.error || !d.ip) throw new Error('ipapi.co: ' + (d.reason || 'no data'));
+                    return {
+                        ip:       d.ip       || '',
+                        isp:      d.org      || d.asn || null,
+                        location: [d.city, d.region].filter(Boolean).join(', ') || null
+                    };
+                },
+                async () => {
+                    const d = await fetch('https://ipinfo.io/json', { headers: { Accept: 'application/json' } }).then(r => r.json());
+                    if (d.bogon || d.error || !d.ip) throw new Error('ipinfo.io: no data');
+                    return {
+                        ip:       d.ip     || '',
+                        isp:      d.org    || null,
+                        location: [d.city, d.region].filter(Boolean).join(', ') || null
+                    };
+                }
+            ];
+            for (const provider of providers) {
+                try { return await provider(); } catch { /* следующий */ }
+            }
+            return null;
+        }
+
+        async function fetchNetworkInfo() {
+            setNetworkLoadingState(true);
+            try {
+                const response = await fetch(getApiUrl('/api/network-info'), {
+                    method: 'GET',
+                    headers: { Accept: 'application/json' }
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const data = await response.json();
+                const serverIp       = data?.client?.ip       || '';
+                const serverIsp      = data?.client?.isp      || null;
+                const serverLocation = data?.client?.location || null;
+                const isLocal        = data?.client?.isLocal  || false;
+                const speedSrv       = data?.speedServer?.location || null;
+                const appRegion      = data?.appServer?.region    || 'unknown';
+
+                // Браузерный фолбек если: сервер получил локальный IP или не смог определить ISP/локацию
+                const needBrowserGeo = isLocal || (!serverIsp && !serverLocation);
+                if (needBrowserGeo) {
+                    const geo = await fetchGeoFromBrowser();
+                    if (geo) {
+                        applyNetworkSnapshot({
+                            ip:              geo.ip       || serverIp,
+                            isp:             geo.isp      || null,
+                            location:        geo.location || null,
+                            serverLocation:  speedSrv,
+                            isLocal:         false,
+                            appServerRegion: appRegion
+                        });
+                        return;
+                    }
+                }
+
+                applyNetworkSnapshot({
+                    ip:              serverIp,
+                    isp:             serverIsp,
+                    location:        serverLocation,
+                    serverLocation:  speedSrv,
+                    isLocal:         isLocal,
+                    appServerRegion: appRegion
+                });
+            } catch (error) {
+                console.error('Не удалось получить network info с сервера:', error);
+                // Сервер недоступен — пробуем получить данные напрямую через браузер
+                const geo = await fetchGeoFromBrowser();
+                applyNetworkSnapshot(geo ? {
+                    ip:             geo.ip       || '',
+                    isp:            geo.isp      || null,
+                    location:       geo.location || null,
+                    serverLocation: null,
+                    isLocal:        false
+                } : null);
+            } finally {
+                setNetworkLoadingState(false);
+            }
+        }
+
+        async function refreshNetworkInfo() {
+            const btn = document.getElementById('networkRefreshBtn');
+            if (btn) { btn.disabled = true; btn.classList.add('spinning'); }
+            try {
+                await fetchNetworkInfo();
+            } finally {
+                if (btn) { btn.disabled = false; btn.classList.remove('spinning'); }
+            }
+        }
+
+        function showColdStartBanner(text) {
+            const banner = document.getElementById('coldStartBanner');
+            const label  = document.getElementById('coldStartText');
+            if (!banner) return;
+            if (label && text) label.textContent = text;
+            banner.classList.remove('hide');
+            banner.style.display = 'block';
+        }
+
+        function hideColdStartBanner() {
+            const banner = document.getElementById('coldStartBanner');
+            if (!banner || banner.style.display === 'none') return;
+            banner.classList.add('hide');
+            setTimeout(() => { banner.style.display = 'none'; }, 420);
+        }
+
+        async function warmupServer(force = false) {
+            if (warmupDone && !force) return;
+
+            // Если сервер не ответил за 3 сек — показываем баннер холодного старта
+            let bannerShown = false;
+            const bannerTimer = setTimeout(() => {
+                bannerShown = true;
+                showColdStartBanner('⚡ Сервер просыпается... Подождите ~30 сек.');
+            }, 3000);
+
+            const MAX_ATTEMPTS = 2;
+            for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+                try {
+                    const controller = new AbortController();
+                    // Даём 45 секунд на холодный старт Render
+                    const timeout = setTimeout(() => controller.abort(), 45000);
+                    await fetch(getApiUrl(`/api/warmup${force ? '?force=1' : ''}`), {
+                        method: 'GET',
+                        headers: { Accept: 'application/json' },
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeout);
+                    break; // успех
+                } catch (error) {
+                    if (attempt === MAX_ATTEMPTS) {
+                        console.error('Warmup недоступен:', error);
+                    } else {
+                        await new Promise(r => setTimeout(r, 2000));
+                    }
+                }
+            }
+
+            clearTimeout(bannerTimer);
+            warmupDone = true;
+            if (bannerShown) hideColdStartBanner();
+        }
+
+        function resetTestStages() {
+            ['stagePing', 'stageDownload', 'stageUpload'].forEach((id) => {
+                const node = document.getElementById(id);
+                if (!node) return;
+                node.classList.remove('active', 'done');
+            });
+        }
+
+        function activateTestStage(stage) {
+            const order = ['ping', 'download', 'upload'];
+            const map = {
+                ping: 'stagePing',
+                download: 'stageDownload',
+                upload: 'stageUpload'
+            };
+            const currentIndex = order.indexOf(stage);
+
+            order.forEach((name, index) => {
+                const node = document.getElementById(map[name]);
+                if (!node) return;
+                node.classList.toggle('active', index === currentIndex);
+                node.classList.toggle('done', currentIndex > index);
+            });
+        }
+
+        function completeTestStages() {
+            ['stagePing', 'stageDownload', 'stageUpload'].forEach((id) => {
+                const node = document.getElementById(id);
+                if (!node) return;
+                node.classList.remove('active');
+                node.classList.add('done');
+            });
+        }
+
+        function initLiveChart() {
+            const canvas = document.getElementById('liveResultsChart');
+            if (!canvas) return;
+
+            if (liveChart) liveChart.destroy();
+
+            livePointIndex = 0;
+            const isDark     = document.body.classList.contains('dark-mode');
+            const legendColor = isDark ? '#cbd5e1' : '#475569';
+            const axisColor   = isDark ? '#94a3b8' : '#64748b';
+
+            liveChart = new Chart(canvas, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: appLanguage === 'en' ? 'Download (Mbps)' : 'Загрузка (Мбит/с)',
+                            data: [],
+                            borderColor: '#2563eb',
+                            backgroundColor: 'rgba(37, 99, 235, 0.10)',
+                            pointRadius: 1.5,
+                            pointHoverRadius: 3,
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: true,
+                            spanGaps: false
+                        },
+                        {
+                            label: appLanguage === 'en' ? 'Upload (Mbps)' : 'Выгрузка (Мбит/с)',
+                            data: [],
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.10)',
+                            pointRadius: 1.5,
+                            pointHoverRadius: 3,
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: true,
+                            spanGaps: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: { boxWidth: 10, font: { size: 11 }, padding: 8, color: legendColor }
+                        }
+                    },
+                    scales: {
+                        x: { display: false },
+                        y: {
+                            beginAtZero: true,
+                            ticks: { maxTicksLimit: 4, callback: (v) => `${v}`, color: axisColor, font: { size: 11 } },
+                            title: { display: true, text: 'Мбит/с', font: { size: 10 }, color: axisColor }
+                        }
+                    }
+                }
+            });
+        }
+
+        // phase: 'download' | 'upload'  (ping не отображается на графике Мбит/с)
+        function pushLivePoint(value, phase) {
+            if (!liveChart || !Number.isFinite(Number(value))) return;
+
+            const v = Number(value);
+            livePointIndex += 1;
+            liveChart.data.labels.push(String(livePointIndex));
+            liveChart.data.datasets[0].data.push(phase === 'download' ? v : null);
+            liveChart.data.datasets[1].data.push(phase === 'upload'   ? v : null);
+
+            if (liveChart.data.labels.length > 60) {
+                liveChart.data.labels.shift();
+                liveChart.data.datasets[0].data.shift();
+                liveChart.data.datasets[1].data.shift();
+            }
+
+            liveChart.update('none');
+        }
+
+        function clearLiveChart() {
+            if (!liveChart) { initLiveChart(); return; }
+            livePointIndex = 0;
+            liveChart.data.labels = [];
+            liveChart.data.datasets[0].data = [];
+            liveChart.data.datasets[1].data = [];
+            liveChart.update('none');
+        }
+
         function getLatestResult() {
             return historyData.length > 0 ? historyData[historyData.length - 1] : null;
         }
@@ -2102,7 +2761,11 @@
                 return '⚡ Я проверяю скорость интернета в SpeedDash Pro!';
             }
 
-            return `⚡ Мой последний тест в SpeedDash Pro:\n⬇️ ${latest.download} Mbps\n⬆️ ${latest.upload} Mbps\n📡 ${latest.ping} мс`;
+            const networkLine = latest.isp
+                ? `\n🌐 ISP: ${latest.isp}${latest.ip ? ` | IP: ${latest.ip}` : ''}`
+                : '';
+
+            return `⚡ Мой последний тест в SpeedDash Pro:\n⬇️ ${latest.download} Mbps\n⬆️ ${latest.upload} Mbps\n📡 ${latest.ping} мс${networkLine}`;
         }
 
         async function shareResults() {
@@ -2273,6 +2936,8 @@
             localStorage.setItem('theme', normalizedTheme);
             updateThemeButtons(normalizedTheme);
             updateThemeToggleButton(normalizedTheme);
+            // Пересоздаём график чтобы цвета легенды/осей соответствовали теме
+            initLiveChart();
         }
 
         function updateThemeToggleButton(theme) {
@@ -2416,6 +3081,7 @@
                     const safeUpload = escapeHtml(item.upload);
                     const safePing = escapeHtml(item.ping);
                     const safeTimestamp = escapeHtml(item.timestamp);
+                    const safeIsp = escapeHtml(item.isp || trUnknown());
                     return `
                     <div class="history-item">
                         <div class="history-item-stats">
@@ -2423,6 +3089,7 @@
                             <span>⬆️ ${safeUpload}</span>
                             <span>📡 ${safePing}мс</span>
                         </div>
+                        <span class="history-item-time">${safeIsp}</span>
                         <button class="delete-btn" onclick="deleteTest('${safeTimestamp}')">✕</button>
                     </div>
                 `;
@@ -2438,12 +3105,18 @@
                     const safeDownload = escapeHtml(item.download);
                     const safeUpload = escapeHtml(item.upload);
                     const safePing = escapeHtml(item.ping);
+                    const safeIsp = escapeHtml(item.isp || trUnknown());
+                    const safeIp = escapeHtml(item.ip || trUnknown());
+                    const safeServer = escapeHtml(item.serverLocation || trUnknown());
                     return `
                     <div class="history-item">
-                        <div class="history-item-stats">
+                        <div class="history-item-stats" style="flex-direction: column; gap: 6px; align-items: flex-start;">
+                            <div style="display:flex; gap:14px;">
                             <span>⬇️ ${safeDownload} Mbps</span>
                             <span>⬆️ ${safeUpload} Mbps</span>
                             <span>📡 ${safePing}мс</span>
+                            </div>
+                            <div style="font-size:11px; opacity:0.8;">IP: ${safeIp} | ISP: ${safeIsp} | Server: ${safeServer}</div>
                         </div>
                         <span class="history-item-time">${escapeHtml(new Date(item.timestamp).toLocaleString('ru-RU'))}</span>
                     </div>
@@ -2629,7 +3302,7 @@
             sendBtn.disabled = true;
 
             try {
-                const response = await fetch('/api/contact-developer', {
+                const response = await fetch(getApiUrl('/api/contact-developer'), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -2684,7 +3357,7 @@
 
         async function refreshExchangeRate(force = false) {
             try {
-                const response = await fetch(`/api/exchange-rate${force ? '?force=1' : ''}`, {
+                const response = await fetch(getApiUrl(`/api/exchange-rate${force ? '?force=1' : ''}`), {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json'
@@ -2716,32 +3389,46 @@
         async function openDonateModal(amount) {
             selectedAmount = amount > 0 ? amount : 500;
             selectedPaymentMethod = null;
-            donateLanguage = 'ru'; // Reset to Russian by default
+            donateLanguage = 'ru';
             currentCurrency = 'usd';
 
             await refreshExchangeRate(false);
-            
+
             document.getElementById('currencySelect').value = 'usd';
-            document.getElementById('customAmount').value = '5';
+            const usdAmount = selectedAmount / 100;
+            document.getElementById('customAmount').value = Number.isInteger(usdAmount) ? String(usdAmount) : usdAmount.toFixed(2);
             updateCustomAmount();
             renderCurrencyInfo();
-            
+
             document.querySelectorAll('.payment-option').forEach(el => el.classList.remove('selected'));
-            
-            // Initialize language buttons
+
+            // Сброс кнопок языка
             const langBtns = document.querySelectorAll('.lang-btn');
             langBtns[0].classList.add('active');
             langBtns[0].style.background = '#667eea';
             langBtns[0].style.color = 'white';
+            langBtns[0].style.border = 'none';
+            langBtns[1].classList.remove('active');
             langBtns[1].style.background = 'transparent';
             langBtns[1].style.color = '#667eea';
             langBtns[1].style.border = '1px solid #667eea';
-            
+
+            renderPayBtnText();
             document.getElementById('donateModal').classList.add('active');
         }
         
         function changeCurrency() {
+            const prev = currentCurrency;
             currentCurrency = document.getElementById('currencySelect').value;
+            const customInput = document.getElementById('customAmount');
+            // Конвертируем текущую сумму при смене валюты
+            if (currentCurrency === 'rub' && prev === 'usd') {
+                const rubDefault = Math.round((selectedAmount / 100) * exchangeRate);
+                customInput.value = String(rubDefault > 0 ? rubDefault : 500);
+            } else if (currentCurrency === 'usd' && prev === 'rub') {
+                const usdDefault = Math.round(selectedAmount / 100 / (exchangeRate > 0 ? exchangeRate : 90));
+                customInput.value = String(usdDefault > 0 ? usdDefault : 5);
+            }
             updateCustomAmount();
             renderCurrencyInfo();
         }
@@ -2752,27 +3439,22 @@
 
         function setDonateLanguage(lang) {
             donateLanguage = lang;
-            
-            // Обновляем кнопки языка
-            document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-            event.target.style.background = '#667eea';
-            event.target.style.color = 'white';
-            event.target.style.border = 'none';
-            
-            const otherBtn = Array.from(document.querySelectorAll('.lang-btn')).find((b) => !b.classList.contains('active'));
-            if (otherBtn) {
-                otherBtn.style.background = 'transparent';
-                otherBtn.style.color = '#667eea';
-                otherBtn.style.border = '1px solid #667eea';
-            }
-            
+
+            // Обновляем кнопки языка без использования глобального event
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                const isRu = btn.textContent.trim() === 'РУ';
+                const isActive = (lang === 'ru' && isRu) || (lang === 'en' && !isRu);
+                btn.classList.toggle('active', isActive);
+                btn.style.background = isActive ? '#667eea' : 'transparent';
+                btn.style.color = isActive ? 'white' : '#667eea';
+                btn.style.border = isActive ? 'none' : '1px solid #667eea';
+            });
+
             // Обновляем текст
             if (lang === 'ru') {
                 document.getElementById('donateTitle').textContent = 'Поддержать проект';
                 document.getElementById('sumLabel').textContent = 'Выберите сумму пожертвования';
                 document.getElementById('payLabel').textContent = '💳 Выберите способ оплаты:';
-                document.getElementById('payBtn').textContent = 'Продолжить платеж →';
                 document.querySelector('.paymentDescSbp').textContent = 'Не доступно • Beta';
                 document.querySelector('.paymentDescMc').textContent = 'Не доступно • Beta';
                 document.querySelector('.paymentDescYk').textContent = 'Быстрая оплата';
@@ -2782,28 +3464,50 @@
                 document.getElementById('donateTitle').textContent = 'Support Project';
                 document.getElementById('sumLabel').textContent = 'Select donation amount';
                 document.getElementById('payLabel').textContent = '💳 Select payment method:';
-                document.getElementById('payBtn').textContent = 'Continue payment →';
                 document.querySelector('.paymentDescSbp').textContent = 'Unavailable • Beta';
                 document.querySelector('.paymentDescMc').textContent = 'Unavailable • Beta';
                 document.querySelector('.paymentDescYk').textContent = 'Fast payment';
                 document.querySelector('.paymentDescMir').textContent = 'Unavailable • Beta';
                 document.querySelector('.paymentDescCrypto').textContent = 'Unavailable • Beta';
             }
+            renderPayBtnText();
+        }
+
+        function renderPayBtnText() {
+            const payBtn = document.getElementById('payBtn');
+            if (!payBtn || payBtn.disabled) return;
+            const amount = selectedAmount / 100;
+            let display;
+            if (currentCurrency === 'rub') {
+                display = amount.toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' ₽';
+            } else {
+                display = '$' + amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+            const label = donateLanguage === 'ru' ? `Оплатить ${display} →` : `Pay ${display} →`;
+            payBtn.textContent = label;
         }
 
         function updateCustomAmount() {
             const customInput = document.getElementById('customAmount');
-            if (customInput.value && Number(customInput.value) > 0) {
-                const amount = parseFloat(customInput.value) * 100;
-                selectedAmount = amount;
+            const raw = parseFloat(customInput.value);
+            if (raw > 0) {
+                selectedAmount = Math.round(raw * 100);
             } else {
-                selectedAmount = currentCurrency === 'usd' ? 500 : Math.round(5 * 100);
+                if (currentCurrency === 'rub') {
+                    selectedAmount = 50000; // 500 ₽
+                    customInput.value = '500';
+                } else {
+                    selectedAmount = 500; // $5.00
+                    customInput.value = '5';
+                }
             }
+            renderPayBtnText();
         }
 
         function selectPayment(element, method) {
             if (element.classList.contains('payment-unavailable')) {
-                showNotification('Этот способ пока не доступен в Beta', 'info');
+                const msg = donateLanguage === 'ru' ? 'Этот способ пока не доступен в Beta' : 'This method is not available yet (Beta)';
+                showNotification(msg, 'info');
                 return;
             }
 
@@ -2814,21 +3518,33 @@
 
         async function processPayment() {
             if (!selectedPaymentMethod) {
-                showNotification('Выберите способ оплаты', 'error');
+                const msg = donateLanguage === 'ru' ? 'Выберите способ оплаты' : 'Select payment method';
+                showNotification(msg, 'error');
+                return;
+            }
+
+            const amount = Math.round(selectedAmount);
+            const minAmount = currentCurrency === 'rub' ? 5000 : 100; // 50 ₽ или $1.00
+            if (!Number.isInteger(amount) || amount < minAmount || amount > 100000000) {
+                const minDisplay = currentCurrency === 'rub' ? '50 ₽' : '$1.00';
+                const msg = donateLanguage === 'ru'
+                    ? `Минимальная сумма: ${minDisplay}`
+                    : `Minimum amount: ${minDisplay}`;
+                showNotification(msg, 'error');
                 return;
             }
 
             const payBtn = document.getElementById('payBtn');
+            const originalText = payBtn.textContent;
             payBtn.disabled = true;
+            payBtn.textContent = donateLanguage === 'ru' ? '⏳ Обработка...' : '⏳ Processing...';
 
             try {
-                const response = await fetch('/api/create-payment-session', {
+                const response = await fetch(getApiUrl('/api/create-payment-session'), {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        amount: Math.round(selectedAmount),
+                        amount,
                         currency: currentCurrency,
                         method: selectedPaymentMethod,
                         language: donateLanguage
@@ -2837,35 +3553,36 @@
 
                 const data = await response.json();
                 if (!response.ok) {
-                    throw new Error(data.error || 'Ошибка инициализации платежа');
+                    throw new Error(data.error || (donateLanguage === 'ru' ? 'Ошибка инициализации платежа' : 'Payment initialization error'));
                 }
 
-                closeDonateModal();
-
                 if (data.provider === 'link') {
+                    closeDonateModal();
                     window.location.href = data.url;
                     return;
                 }
 
                 if (data.provider === 'stripe') {
                     if (!window.Stripe) {
-                        throw new Error('Stripe SDK не загружен');
+                        throw new Error(donateLanguage === 'ru' ? 'Stripe SDK не загружен' : 'Stripe SDK not loaded');
                     }
-
                     const stripe = window.Stripe(data.publishableKey);
                     const result = await stripe.redirectToCheckout({ sessionId: data.sessionId });
                     if (result.error) {
-                        throw new Error(result.error.message || 'Ошибка перенаправления в Stripe');
+                        throw new Error(result.error.message || (donateLanguage === 'ru' ? 'Ошибка перенаправления в Stripe' : 'Stripe redirect error'));
                     }
+                    closeDonateModal();
                     return;
                 }
 
-                throw new Error('Неизвестный провайдер платежа');
+                throw new Error(donateLanguage === 'ru' ? 'Неизвестный провайдер платежа' : 'Unknown payment provider');
             } catch (error) {
                 console.error(error);
-                showNotification(`Ошибка платежа: ${error.message}`, 'error');
+                const prefix = donateLanguage === 'ru' ? 'Ошибка платежа: ' : 'Payment error: ';
+                showNotification(prefix + error.message, 'error');
             } finally {
                 payBtn.disabled = false;
+                payBtn.textContent = originalText;
             }
         }
 
@@ -2890,9 +3607,9 @@
                 showNotification('Нечего экспортировать!', 'error'); 
                 return; 
             }
-            let csv = 'Дата,Загрузка (Mbps),Выгрузка (Mbps),Пинг (мс)\n';
+            let csv = 'Дата,Загрузка (Mbps),Выгрузка (Mbps),Пинг (мс),IP,ISP,Сервер\n';
             historyData.forEach(item => {
-                csv += `"${new Date(item.timestamp).toLocaleString('ru-RU')}",${item.download},${item.upload},${item.ping}\n`;
+                csv += `"${new Date(item.timestamp).toLocaleString('ru-RU')}",${item.download},${item.upload},${item.ping},"${(item.ip || '').replaceAll('"', '""')}","${(item.isp || '').replaceAll('"', '""')}","${(item.serverLocation || '').replaceAll('"', '""')}"\n`;
             });
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
@@ -2920,14 +3637,46 @@
             startBtn.disabled = true;
             resetBtn.disabled = true;
             statusDiv.className = 'status testing';
-            statusDiv.innerHTML = trMain('testing');
+            statusDiv.innerHTML = appLanguage === 'en'
+                ? '<span class="spinner"></span> Warming up server and test channels...'
+                : '<span class="spinner"></span> Прогреваем сервер и каналы теста...';
             progressFill.style.width = '0%';
             qualityInfo.style.display = 'none';
+            resetTestStages();
+            clearLiveChart();
             closeSidebar();
+
+            await warmupServer(false);
+            await fetchNetworkInfo();
 
             const speedTest = new InternetSpeedTest({
                 onProgress: (info) => {
                     if (!info || !statusDiv) return;
+
+                    if (info.phase === 'ping-sample') {
+                        activateTestStage('ping');
+                        progressFill.style.width = '22%';
+                        // Пинг (мс) не добавляется в график Мбит/с
+                        return;
+                    }
+
+                    if (info.phase === 'download-live') {
+                        activateTestStage('download');
+                        progressFill.style.width = '58%';
+                        if (Number.isFinite(Number(info.mbps))) {
+                            pushLivePoint(Number(info.mbps), 'download');
+                        }
+                        return;
+                    }
+
+                    if (info.phase === 'upload-attempt-done') {
+                        activateTestStage('upload');
+                        progressFill.style.width = '84%';
+                        if (Number.isFinite(Number(info.attemptMbps))) {
+                            pushLivePoint(Number(info.attemptMbps), 'upload');
+                        }
+                        return;
+                    }
 
                     if (info.phase === 'calibration-start') {
                         statusDiv.innerHTML = '<span class="spinner"></span> ⚙️ Оптимизируем тест под вашу сеть...';
@@ -2953,6 +3702,7 @@
 
             try {
                 progressFill.style.width = '25%';
+                activateTestStage('ping');
                 statusDiv.innerHTML = trMain('pingStatus');
                 await speedTest.measurePing();
                 if (!Number.isFinite(Number(speedTest.results.ping))) {
@@ -2962,6 +3712,7 @@
                 animateValue('ping', 0, parseFloat(results.ping), 600);
 
                 progressFill.style.width = '50%';
+                activateTestStage('download');
                 statusDiv.innerHTML = trMain('downloadPrepare');
                 await speedTest.measureDownloadSpeed();
                 if (!Number.isFinite(Number(speedTest.results.downloadSpeed))) {
@@ -2979,6 +3730,7 @@
                 animateValue('download', 0, parseFloat(results.download), 600);
 
                 progressFill.style.width = '75%';
+                activateTestStage('upload');
                 statusDiv.innerHTML = trMain('uploadStatus');
                 await speedTest.measureUploadSpeed();
                 if (!Number.isFinite(Number(speedTest.results.uploadSpeed))) {
@@ -2991,7 +3743,10 @@
                     timestamp: new Date().toISOString(),
                     ping: results.ping,
                     download: results.download,
-                    upload: results.upload
+                    upload: results.upload,
+                    ip: networkSnapshot?.ip || '',
+                    isp: networkSnapshot?.isp || '',
+                    serverLocation: networkSnapshot?.serverLocation || ''
                 };
                 historyData.push(resultItem);
                 saveHistory();
@@ -3012,6 +3767,7 @@
                 qualityInfo.style.display = 'block';
 
                 progressFill.style.width = '100%';
+                completeTestStages();
                 statusDiv.className = 'status completed';
                 statusDiv.textContent = trMain('completedStatus');
                 updateUI();
@@ -3054,6 +3810,8 @@
             document.getElementById('status').className = 'status';
             document.getElementById('status').textContent = trMain('readyStatus');
             document.getElementById('progressFill').style.width = '0%';
+            resetTestStages();
+            clearLiveChart();
         }
 
         function setupSidebarInteractions() {
@@ -3108,8 +3866,11 @@
             setTheme(theme);
             loadHistory();
             applyMainLanguage();
+            initLiveChart();
             setupSidebarInteractions();
             registerServiceWorker();
+            warmupServer(false);
+            fetchNetworkInfo();
             updateNetworkStatus();
             refreshExchangeRate(false);
             setInterval(() => {

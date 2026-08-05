@@ -1,4 +1,5 @@
 const path = require('path');
+const os = require('os');
 const express = require('express');
 const dotenv = require('dotenv');
 const helmet = require('helmet');
@@ -11,7 +12,8 @@ dotenv.config();
 const app = express();
 const rootDir = __dirname;
 const port = Number(process.env.PORT) || 3000;
-const configuredBaseUrl = String(process.env.APP_BASE_URL || '').trim().replace(/\/$/, '');
+const configuredBaseUrl    = String(process.env.APP_BASE_URL    || '').trim().replace(/\/$/, '');
+const configuredFrontendUrl = String(process.env.FRONTEND_URL   || '').trim().replace(/\/$/, '');
 const allowedOriginsFromEnv = String(process.env.ALLOWED_ORIGINS || '')
     .split(',')
     .map((origin) => origin.trim().replace(/\/$/, ''))
@@ -35,13 +37,21 @@ const exchangeRateCache = {
     updatedAt: 0,
     source: 'default'
 };
+const startupTime = Date.now();
+const warmupState = {
+    lastRunAt: 0,
+    lastDurationMs: 0,
+    status: 'idle',
+    error: ''
+};
 
 app.disable('x-powered-by');
 
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false }));
 
-app.use(helmet({
+// Статические файлы больше не обслуживаются здесь — фронтенд развёрнут на Render Static Site
+// При локальной разработке открывайте index.html напрямую через браузер или Live Server.
     contentSecurityPolicy: {
         useDefaults: true,
         directives: {
@@ -57,7 +67,9 @@ app.use(helmet({
                 'https://www.google.com',
                 'https://postman-echo.com',
                 'https://httpbin.org',
-                'https://api.stripe.com'
+                'https://api.stripe.com',
+                'https://ipapi.co',
+                'https://ipinfo.io'
             ],
             frameSrc: ["'self'", 'https://js.stripe.com', 'https://checkout.stripe.com', 'https://hooks.stripe.com'],
             workerSrc: ["'self'", 'blob:'],
@@ -122,7 +134,8 @@ app.use('/api/create-payment-session', paymentLimiter);
 app.use('/api/contact-developer', contactLimiter);
 app.use('/share', shareLimiter);
 
-app.use(express.static(rootDir, { extensions: ['html'] }));
+// Фронтенд развёрнут в Render Static Site — статику здесь не раздаём
+// app.use(express.static(...))
 
 function normalizeOrigin(value) {
     try {
@@ -141,10 +154,15 @@ function getAllowedOrigins() {
 
     if (configuredBaseUrl) {
         const normalizedBase = normalizeOrigin(configuredBaseUrl);
-        if (normalizedBase) {
-            origins.add(normalizedBase);
-        }
+        if (normalizedBase) origins.add(normalizedBase);
     }
+
+    // Домен фронтенда (отдельный Render Static Site)
+    if (configuredFrontendUrl) {
+        const normalizedFrontend = normalizeOrigin(configuredFrontendUrl);
+        if (normalizedFrontend) origins.add(normalizedFrontend);
+    }
+
     return origins;
 }
 
@@ -175,6 +193,11 @@ function resolveAppOrigin(req) {
 
     if (headerOrigin && (allowedOrigins.size === 0 || allowedOrigins.has(headerOrigin))) {
         return headerOrigin;
+    }
+
+    // Предпочтительно возвращаем URL фронтенда для Stripe redirect
+    if (configuredFrontendUrl) {
+        return normalizeOrigin(configuredFrontendUrl);
     }
 
     if (configuredBaseUrl) {
@@ -324,8 +347,244 @@ async function fetchUsdRubRateOnline() {
     throw lastError || new Error('Не удалось получить онлайн-курс USD/RUB');
 }
 
+function parseCloudflareTrace(rawTrace) {
+    const lines = String(rawTrace || '').split('\n');
+    const map = {};
+    for (const line of lines) {
+        const idx = line.indexOf('=');
+        if (idx <= 0) continue;
+        const key = line.slice(0, idx).trim();
+        const value = line.slice(idx + 1).trim();
+        if (key) {
+            map[key] = value;
+        }
+    }
+    return map;
+}
+
+function extractClientIp(req) {
+    const forwarded = String(req.headers['x-forwarded-for'] || '');
+    if (forwarded) {
+        return forwarded.split(',')[0].trim();
+    }
+
+    const cfIp = String(req.headers['cf-connecting-ip'] || '').trim();
+    if (cfIp) return cfIp;
+
+    const realIp = String(req.headers['x-real-ip'] || '').trim();
+    if (realIp) return realIp;
+
+    return String(req.socket?.remoteAddress || 'unknown');
+}
+
+function isPrivateOrLocalIp(ip) {
+    const value = String(ip || '').toLowerCase();
+    if (!value || value === 'unknown') return true;
+    if (value === '::1' || value === 'localhost') return true;
+    // IPv4-mapped IPv6 (::ffff:127.0.0.1, ::ffff:192.168.x.x и т.d.)
+    if (value.startsWith('::ffff:')) {
+        return isPrivateOrLocalIp(value.slice('::ffff:'.length));
+    }
+    if (value.startsWith('127.')) return true;
+    if (value.startsWith('10.')) return true;
+    if (value.startsWith('192.168.')) return true;
+    if (/^172\.(2\d|3[0-1])\./.test(value)) return true;
+    if (value.startsWith('fc') || value.startsWith('fd')) return true;
+    if (value.startsWith('fe80:')) return true;
+    return false;
+}
+
+async function fetchJsonWithTimeout(url, timeoutMs = 5000) {
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timeout = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: { Accept: 'application/json' },
+            signal: controller ? controller.signal : undefined
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return await response.json();
+    } finally {
+        if (timeout) clearTimeout(timeout);
+    }
+}
+
+async function fetchTextWithTimeout(url, timeoutMs = 5000) {
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timeout = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: { Accept: 'text/plain' },
+            signal: controller ? controller.signal : undefined
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return await response.text();
+    } finally {
+        if (timeout) clearTimeout(timeout);
+    }
+}
+
+async function resolveClientNetworkInfo(ip) {
+    if (!ip || isPrivateOrLocalIp(ip)) {
+        return { ip: ip || '', isp: null, location: null, country: null, isLocal: true };
+    }
+
+    const encodedIp = encodeURIComponent(ip);
+
+    // Провайдер 1: ipapi.co (бесплатно, 1000 зап/день)
+    try {
+        const d = await fetchJsonWithTimeout(`https://ipapi.co/${encodedIp}/json/`, 5000);
+        if (d.error || d.reason) throw new Error(String(d.reason || d.error || 'ipapi.co error'));
+        const city    = String(d?.city          || '').trim();
+        const region  = String(d?.region        || '').trim();
+        const country = String(d?.country_name  || '').trim();
+        const isp     = String(d?.org  || d?.asn || '').trim();
+        return {
+            ip,
+            isp:      isp      || null,
+            location: [city, region].filter(Boolean).join(', ') || null,
+            country:  country  || null
+        };
+    } catch { /* переходим к следующему */ }
+
+    // Провайдер 2: ip-api.com (HTTP, free — 45 зап/мин)
+    try {
+        const d = await fetchJsonWithTimeout(
+            `http://ip-api.com/json/${encodedIp}?fields=status,message,country,regionName,city,org`,
+            5000
+        );
+        if (d.status !== 'success') throw new Error(d.message || 'ip-api.com failed');
+        const city    = String(d?.city       || '').trim();
+        const region  = String(d?.regionName || '').trim();
+        const isp     = String(d?.org        || '').trim();
+        const country = String(d?.country    || '').trim();
+        return {
+            ip,
+            isp:      isp      || null,
+            location: [city, region].filter(Boolean).join(', ') || null,
+            country:  country  || null
+        };
+    } catch { /* переходим к следующему */ }
+
+    // Провайдер 3: ipinfo.io (HTTPS, 50k зап/месяц)
+    try {
+        const d = await fetchJsonWithTimeout(`https://ipinfo.io/${encodedIp}/json`, 5000);
+        if (d.bogon || d.error) throw new Error('ipinfo.io error');
+        const city    = String(d?.city    || '').trim();
+        const region  = String(d?.region  || '').trim();
+        const isp     = String(d?.org     || '').trim();
+        const country = String(d?.country || '').trim();
+        return {
+            ip,
+            isp:      isp      || null,
+            location: [city, region].filter(Boolean).join(', ') || null,
+            country:  country  || null
+        };
+    } catch { /* все провайдеры недоступны */ }
+
+    return { ip, isp: null, location: null, country: null };
+}
+
+async function resolveSpeedServerLocation() {
+    try {
+        const raw = await fetchTextWithTimeout('https://speed.cloudflare.com/cdn-cgi/trace', 5000);
+        const parsed = parseCloudflareTrace(raw);
+        const loc = String(parsed.loc || '').trim();
+        const colo = String(parsed.colo || '').trim();
+        return {
+            provider: 'Cloudflare Speed Test',
+            location: [loc, colo].filter(Boolean).join(' / ') || 'Unknown',
+            colo: colo || 'Unknown'
+        };
+    } catch {
+        return {
+            provider: 'Cloudflare Speed Test',
+            location: 'Unknown',
+            colo: 'Unknown'
+        };
+    }
+}
+
+async function runServerWarmup() {
+    const started = Date.now();
+    warmupState.status = 'running';
+    warmupState.error = '';
+
+    try {
+        const tasks = await Promise.allSettled([
+            fetchUsdRubRateOnline(),
+            resolveSpeedServerLocation()
+        ]);
+
+        const rateTask = tasks[0];
+        if (rateTask.status === 'fulfilled') {
+            exchangeRateCache.usdRub = rateTask.value.usdRub;
+            exchangeRateCache.updatedAt = Date.now();
+            exchangeRateCache.source = rateTask.value.source;
+        }
+
+        warmupState.status = 'ok';
+    } catch (error) {
+        warmupState.status = 'error';
+        warmupState.error = String(error?.message || 'warmup failed');
+    } finally {
+        warmupState.lastRunAt = Date.now();
+        warmupState.lastDurationMs = warmupState.lastRunAt - started;
+    }
+}
+
 app.get('/health', (_req, res) => {
     res.json({ ok: true });
+});
+
+app.get('/api/warmup', async (req, res) => {
+    const force = req.query.force === '1';
+    const cacheFresh = Date.now() - warmupState.lastRunAt < 5 * 60 * 1000;
+
+    if (force || !cacheFresh) {
+        await runServerWarmup();
+    }
+
+    return res.json({
+        ok: true,
+        uptimeSeconds: Math.round(process.uptime()),
+        startupAt: startupTime,
+        warmup: {
+            status: warmupState.status,
+            lastRunAt: warmupState.lastRunAt,
+            lastDurationMs: warmupState.lastDurationMs,
+            error: warmupState.error || null
+        },
+        server: {
+            hostname: os.hostname(),
+            region: process.env.RENDER_REGION || process.env.FLY_REGION || 'unknown',
+            nodeEnv: process.env.NODE_ENV || 'development'
+        }
+    });
+});
+
+app.get('/api/network-info', async (req, res) => {
+    const ip = extractClientIp(req);
+    const [client, speedServer] = await Promise.all([
+        resolveClientNetworkInfo(ip),
+        resolveSpeedServerLocation()
+    ]);
+
+    return res.json({
+        ok: true,
+        client,
+        speedServer,
+        appServer: {
+            region: process.env.RENDER_REGION || process.env.FLY_REGION || 'unknown',
+            hostname: os.hostname()
+        }
+    });
 });
 
 app.get('/api/exchange-rate', async (req, res) => {
@@ -479,10 +738,12 @@ app.post('/api/create-payment-session', async (req, res) => {
 
 app.post('/share', (req, res) => {
     const title = String(req.body.title || '');
-    const text = String(req.body.text || '');
-    const url = String(req.body.url || '');
+    const text  = String(req.body.text  || '');
+    const url   = String(req.body.url   || '');
     const params = new URLSearchParams({ shared: '1', title, text, url });
-    res.redirect(`/index.html?${params.toString()}`);
+    // Перенаправляем на фронтенд (Render Static Site)
+    const frontendBase = configuredFrontendUrl || configuredBaseUrl || `http://localhost:${port}`;
+    res.redirect(`${frontendBase}/index.html?${params.toString()}`);
 });
 
 app.post('/api/contact-developer', async (req, res) => {
@@ -534,9 +795,7 @@ app.post('/api/contact-developer', async (req, res) => {
     }
 });
 
-app.get('*', (_req, res) => {
-    res.sendFile(path.join(rootDir, 'index.html'));
-});
+// catch-all удалён: фронтенд обслуживается Render Static Site
 
 app.use((err, _req, res, next) => {
     if (err && err.type === 'entity.too.large') {
@@ -550,6 +809,43 @@ app.use((err, _req, res, next) => {
     return next();
 });
 
+// Keep-alive: пингуем себя каждые 14 минут, чтобы Render не усыплял (free tier спит после 15 мин без запросов)
+const keepAliveIntervalMs = 14 * 60 * 1000;
+
+function startKeepAlive() {
+    const selfBase = configuredBaseUrl || `http://localhost:${port}`;
+    const pingUrl = `${selfBase}/health`;
+
+    setInterval(async () => {
+        try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 10000);
+            const response = await fetch(pingUrl, {
+                method: 'GET',
+                headers: { 'User-Agent': 'SpeedDash-KeepAlive/1.0' },
+                signal: controller.signal
+            });
+            clearTimeout(timeout);
+            if (!response.ok) {
+                console.warn(`[keep-alive] /health вернул ${response.status}`);
+            }
+        } catch (error) {
+            console.warn('[keep-alive] self-ping не удался:', error?.message || error);
+        }
+    }, keepAliveIntervalMs);
+
+    console.log(`[keep-alive] запущен, пинг каждые ${keepAliveIntervalMs / 60000} мин → ${pingUrl}`);
+}
+
 app.listen(port, () => {
     console.log(`SpeedDash Pro web server listening on http://localhost:${port}`);
+
+    runServerWarmup().catch((error) => {
+        console.error('Initial warmup error:', error?.message || error);
+    });
+
+    // Запускаем keep-alive только в production и только если настроен APP_BASE_URL
+    if (configuredBaseUrl && process.env.NODE_ENV !== 'development') {
+        startKeepAlive();
+    }
 });

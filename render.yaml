@@ -1,6 +1,7 @@
 services:
+  # --- Бэкенд: Node.js API ---
   - type: web
-    name: speeddash-pro
+    name: speeddash-pro-api
     runtime: node
     plan: free
     healthCheckPath: /health
@@ -11,3 +12,27 @@ services:
         value: production
       - key: PORT
         value: 10000
+      # URL этого бэкенда, например https://speeddash-pro-api.onrender.com
+      - key: APP_BASE_URL
+        sync: false
+      # URL фронтенда (Render Static Site), например https://speeddash-pro.onrender.com
+      # Используется для CORS и для Stripe redirect URL
+      - key: FRONTEND_URL
+        sync: false
+      # Дополнительные разрешённые origins через запятую (если нужно)
+      - key: ALLOWED_ORIGINS
+        sync: false
+
+  # --- Фронтенд: Static Site ---
+  - type: static
+    name: speeddash-pro
+    buildCommand: printf 'window.API_BASE_URL = "%s";' "$API_BASE_URL" > config.js
+    staticPublishPath: .
+    envVars:
+      # URL бэкенда (speeddash-pro-api), например https://speeddash-pro-api.onrender.com
+      - key: API_BASE_URL
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

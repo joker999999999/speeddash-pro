@@ -14,7 +14,7 @@ function createWindow() {
             contextIsolation: true,
             enableRemoteModule: false,
             preload: path.join(__dirname, 'preload.js'),
-            sandbox: true
+            sandbox: true   
         },
         icon: path.join(__dirname, 'assets/icon.png')
     });
@@ -27,7 +27,7 @@ function createWindow() {
         if (
             input.control && input.shift && input.key.toLowerCase() === 'i' ||
             input.key === 'F12' ||
-            input.control && input.shift && input.key.toLowerCase() === 'c'
+            input.control && input.shift && input.key.toLowerCase() === 'c' 
         ) {
             event.preventDefault();
         }

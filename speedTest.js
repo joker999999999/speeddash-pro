@@ -20,6 +20,11 @@ class InternetSpeedTest {
 
     this.onProgress = typeof options.onProgress === 'function' ? options.onProgress : null;
 
+    // Базовый URL API (пустой при same-origin, или URL бэкенда при раздельном деплое)
+    const apiBase = (typeof window !== 'undefined' && window.API_BASE_URL)
+        ? String(window.API_BASE_URL).replace(/\/$/, '')
+        : '';
+
     this.config = {
       pingSamples: 7,
       pingTimeoutMs: 4000,
@@ -28,14 +33,15 @@ class InternetSpeedTest {
       uploadAttempts: 3,
       uploadBytes: 2 * 1024 * 1024,
       // Online-first: сначала публичные endpoint'ы, затем локальные API как fallback
-      downloadSources: ['https://speed.cloudflare.com/__down', '/api/speed-download'],
-      uploadTargets: ['https://speed.cloudflare.com/__up', '/api/speed-upload', 'https://postman-echo.com/post'],
+      downloadSources: ['https://speed.cloudflare.com/__down', apiBase + '/api/speed-download'],
+      uploadTargets: ['https://speed.cloudflare.com/__up', apiBase + '/api/speed-upload', 'https://postman-echo.com/post'],
       downloadCalibrationBytes: 3 * 1024 * 1024,
       downloadMinBytes: 5 * 1024 * 1024,
       downloadMaxBytes: 35 * 1024 * 1024,
       targetTransferSeconds: 4,
       downloadParallelConnections: 3,
-      uploadParallelConnections: 2
+      uploadParallelConnections: 2,
+      apiBase
     };
   }
 
@@ -123,7 +129,7 @@ class InternetSpeedTest {
   }
 
   async warmupConnection() {
-    const warmups = ['https://speed.cloudflare.com/cdn-cgi/trace', '/health', '/api/speed-download?bytes=65536'];
+    const warmups = ['https://speed.cloudflare.com/cdn-cgi/trace', this.config.apiBase + '/health', this.config.apiBase + '/api/speed-download?bytes=65536'];
     for (const url of warmups) {
       try {
         await this.timedFetch(this.withNoCache(url), {
@@ -143,7 +149,7 @@ class InternetSpeedTest {
     }
   }
 
-  async measureSingleDownload(baseUrl, bytes) {
+  async measureSingleDownload(baseUrl, bytes, connectionIndex = 0, totalConnections = 1) {
     const testFileUrl = this.withNoCache(this.buildDownloadUrl(baseUrl, bytes));
     const { response } = await this.timedFetch(
       testFileUrl,
@@ -161,12 +167,42 @@ class InternetSpeedTest {
 
     const reader = response.body.getReader();
     let totalBytes = 0;
+    const startedAt = performance.now();
+    let lastProgressEmitAt = startedAt;
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
       totalBytes += value.byteLength;
+
+      const now = performance.now();
+      if (now - lastProgressEmitAt >= 220) {
+        const seconds = Math.max((now - startedAt) / 1000, 0.001);
+        const mbps = (totalBytes * 8) / (seconds * 1_000_000);
+        this.emitProgress('download-live', 'Реальный замер загрузки', {
+          stage: 'download',
+          connectionIndex,
+          totalConnections,
+          transferredBytes: totalBytes,
+          totalBytesExpected: bytes,
+          mbps: this.toFixedNumber(mbps)
+        });
+        lastProgressEmitAt = now;
+      }
     }
+
+    const finishedAt = performance.now();
+    const totalSeconds = Math.max((finishedAt - startedAt) / 1000, 0.001);
+    const finalMbps = (totalBytes * 8) / (totalSeconds * 1_000_000);
+    this.emitProgress('download-live', 'Замер загрузки завершен', {
+      stage: 'download',
+      connectionIndex,
+      totalConnections,
+      transferredBytes: totalBytes,
+      totalBytesExpected: bytes,
+      mbps: this.toFixedNumber(finalMbps),
+      done: true
+    });
 
     return totalBytes;
   }
@@ -181,7 +217,7 @@ class InternetSpeedTest {
         const bytesPerConnection = Math.ceil(bytes / parallel);
         const start = performance.now();
         const settled = await Promise.allSettled(
-          Array.from({ length: parallel }, () => this.measureSingleDownload(baseUrl, bytesPerConnection))
+          Array.from({ length: parallel }, (_, index) => this.measureSingleDownload(baseUrl, bytesPerConnection, index + 1, parallel))
         );
         const end = performance.now();
 
@@ -202,6 +238,12 @@ class InternetSpeedTest {
         }
 
         const mbps = (totalBytes * 8) / (seconds * 1_000_000);
+        this.emitProgress('download-attempt-done', 'Прогон загрузки завершен', {
+          stage: 'download',
+          attemptMbps: this.toFixedNumber(mbps),
+          seconds: this.toFixedNumber(seconds),
+          bytes: totalBytes
+        });
         this.results.downloadSource = baseUrl;
         return {
           mbps,
@@ -264,7 +306,14 @@ class InternetSpeedTest {
 
         this.results.uploadSource = target;
         const totalBytes = successfulCount * bytesPerConnection;
-        return (totalBytes * 8) / (seconds * 1_000_000);
+        const mbps = (totalBytes * 8) / (seconds * 1_000_000);
+        this.emitProgress('upload-attempt-done', 'Прогон выгрузки завершен', {
+          stage: 'upload',
+          attemptMbps: this.toFixedNumber(mbps),
+          bytes: totalBytes,
+          seconds: this.toFixedNumber(seconds)
+        });
+        return mbps;
       } catch (error) {
         lastError = error;
       }
@@ -354,6 +403,12 @@ class InternetSpeedTest {
 
       if (sample !== null) {
         samples.push(sample);
+        this.emitProgress('ping-sample', 'Пинг-проба', {
+          stage: 'ping',
+          sample: this.toFixedNumber(sample),
+          sampleIndex: i + 1,
+          sampleTotal: this.config.pingSamples
+        });
       }
     }
 

@@ -78,3 +78,20 @@ If you have a custom domain, replace APP_BASE_URL, ALLOWED_ORIGINS, STRIPE_SUCCE
 1. Never put STRIPE_SECRET_KEY in frontend files.
 2. Keep secrets only in Render Environment variables.
 3. Rotate test keys before production launch.
+
+## 8) Connect your custom domain
+
+1. In Render service settings, open Custom Domains.
+2. Add both domains:
+   - `speeddash-pro.com`
+   - `www.speeddash-pro.com`
+3. In your DNS provider:
+   - Create a CNAME record: `www` -> your Render hostname (`your-service.onrender.com`).
+   - Create an ALIAS/ANAME (or A record if your DNS provider requires it) for root domain `@` -> Render target.
+4. Wait for DNS propagation, then verify both domains open your app.
+5. Update Render env vars to match your domain exactly:
+   - `APP_BASE_URL=https://www.your-domain.com`
+   - `ALLOWED_ORIGINS=https://www.your-domain.com,https://your-domain.com`
+   - `STRIPE_SUCCESS_URL=https://www.your-domain.com/index.html?payment=success`
+   - `STRIPE_CANCEL_URL=https://www.your-domain.com/index.html?payment=cancel`
+6. Enable HTTPS redirect to force `https://` and one canonical host (`www` or non-`www`).

@@ -14,3 +14,5 @@ npm-debug.log*
 .temp/
 temp/
 out/
+# config.js генерируется buildCommand на Render; локально хранит localhost URL
+config.js

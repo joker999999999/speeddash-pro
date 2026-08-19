@@ -45,6 +45,11 @@ const warmupState = {
     error: ''
 };
 
+// Отключение платежей через переменную окружения. Установите DISABLE_PAYMENTS=1
+// чтобы полностью отключить обработку платежей (полезно для простого деплоя без Stripe).
+const paymentsDisabled = String(process.env.DISABLE_PAYMENTS || '').trim().toLowerCase();
+const paymentsDisabledFlag = paymentsDisabled === '1' || paymentsDisabled === 'true' || paymentsDisabled === 'yes';
+
 app.disable('x-powered-by');
 
 app.use(express.json({ limit: '1mb' }));
@@ -677,6 +682,10 @@ app.post('/api/speed-upload', express.raw({ type: '*/*', limit: '60mb' }), (req,
 
 app.post('/api/create-payment-session', async (req, res) => {
     try {
+        if (paymentsDisabledFlag) {
+            return res.json({ ok: false, disabled: true, message: 'Payments are disabled on this deployment' });
+        }
+
         const { amount, currency, method } = assertPaymentPayload(req.body);
         const isStripeMethod = method === 'mastercard';
 
@@ -764,11 +773,21 @@ app.post('/api/contact-developer', async (req, res) => {
         }
 
         const toEmail = String(process.env.DEVELOPER_EMAIL_TO || process.env.GMAIL_USER || '').trim();
+
+        // Если почта не настроена — не падаем, просто логируем и возвращаем ok
         if (!toEmail) {
-            throw new Error('Не настроен DEVELOPER_EMAIL_TO или GMAIL_USER');
+            console.warn('Contact developer skipped: no DEVELOPER_EMAIL_TO or GMAIL_USER configured');
+            return res.json({ ok: true, emailDisabled: true });
         }
 
-        const transport = getSmtpTransport();
+        let transport;
+        try {
+            transport = getSmtpTransport();
+        } catch (err) {
+            console.warn('Contact developer skipped: smtp not configured or invalid', err?.message || err);
+            return res.json({ ok: true, emailDisabled: true });
+        }
+
         const fromEmail = String(process.env.GMAIL_USER || '').trim();
 
         const subject = `SpeedDash Pro: сообщение разработчику${name ? ` от ${name}` : ''}`;

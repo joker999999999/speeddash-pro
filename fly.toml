@@ -3,11 +3,10 @@ kill_signal = "SIGINT"
 kill_timeout = 5
 
 [build]
-  # Use Dockerfile in repo root
-  image = "Dockerfile"
+  image = "dockerfile"
 
 [env]
-  PORT = "8080"
+  DISABLE_PAYMENTS = "1"
 
 [[services]]
   internal_port = 8080
@@ -16,14 +15,3 @@ kill_timeout = 5
   [[services.ports]]
     handlers = ["http"]
     port = 80
-
-  [[services.ports]]
-    handlers = ["tls","http"]
-    port = 443
-
-  [[services.http_checks]]
-    path = "/health"
-    method = "get"
-    interval = "10s"
-    timeout = "2s"
-    grace_period = "10s"

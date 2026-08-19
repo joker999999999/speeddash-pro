@@ -1,18 +1,13 @@
-FROM node:20-alpine AS builder
-WORKDIR /app
-
-# install dependencies
-COPY package.json package-lock.json* ./
-RUN npm ci --production --silent || npm install --production --silent
-
-# copy sources
-COPY . .
-
 FROM node:20-alpine
+
 WORKDIR /app
 
-# copy runtime files
-COPY --from=builder /app .
+# Устанавливаем только runtime-зависимости
+COPY package*.json ./
+RUN npm ci --only=production
+
+# Копируем код
+COPY . .
 
 ENV NODE_ENV=production
 ENV PORT=8080

@@ -3,7 +3,7 @@ services:
   - type: web
     name: speeddash-pro
     runtime: node
-    plan: starter
+    plan: free
     autoDeploy: true
     healthCheckPath: /health
     buildCommand: npm install
@@ -17,3 +17,5 @@ services:
         value: https://speeddash-pro.onrender.com
       - key: ALLOWED_ORIGINS
         value: https://speeddash-pro.onrender.com
+      - key: DISABLE_PAYMENTS
+        value: "1"

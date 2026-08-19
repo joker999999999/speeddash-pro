@@ -21,9 +21,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>⚡ SpeedDash Pro - Мгновенная Проверка Скорости</title>
     <link rel="manifest" href="manifest.json">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <script src="https://js.stripe.com/v3/"></script>
-    <script src="config.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js" defer></script>
+    <script src="https://js.stripe.com/v3/" defer></script>
+    <script src="config.js" defer></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -1611,6 +1611,39 @@
             to { opacity: 1; transform: translateX(0); }
         }
 
+            /* Доп. правки для мобильных устройств */
+            .sidebar { width: min(300px, 85vw); }
+
+            @media (max-width: 480px) {
+                body { padding: 12px; }
+                .header { margin-bottom: 20px; }
+                .logo { font-size: 20px; }
+                .header-actions { gap: 8px; }
+                .header-btn, .menu-btn { padding: 10px 12px; font-size: 16px; }
+                .main-container { padding: 12px; border-radius: 14px; }
+                .card { padding: 20px; }
+                .live-chart-wrap { height: 140px; }
+                .chart-container { height: 240px; }
+                .result-value { font-size: 24px; }
+                .results { gap: 10px; }
+                .menu-btn { font-size: 18px; padding: 10px; }
+            }
+
+            /* Уменьшаем тяжёлые эффекты на маленьких экранах и для устройств с reduced motion */
+            @media (max-width: 900px), (prefers-reduced-motion: reduce) {
+                body::before { opacity: 0.04; filter: none; }
+                .main-container, .card, .site-footer-row, .sidebar { box-shadow: none; backdrop-filter: none; }
+                .result-card::before { display: none; }
+                .confetti { display: none; }
+                .card, .donate-section, .feature-card { transition: none; }
+                .result-card:hover { transform: none; }
+            }
+
+            @media (max-width: 600px) {
+                body::before { display: none; }
+                .main-container, .card { border-radius: 12px; }
+            }
+
     </style>
 </head>
 <body>
@@ -2082,7 +2115,16 @@
 
     <script src="speedTest.js"></script>
     <script>
-        // F12, Ctrl+Shift+I/J/C, Ctrl+U и правая кнопка мыши заблокированы.
+        // DevTools и стандартные действия браузера не ограничиваются.
+
+        // Полифилл для replaceAll — безопасный fallback для старых браузеров
+        if (!String.prototype.replaceAll) {
+            // eslint-disable-next-line no-extend-native
+            String.prototype.replaceAll = function(search, replacement) {
+                if (search === undefined || search === null) return String(this);
+                return String(this).split(String(search)).join(String(replacement));
+            };
+        }
 
         // Базовый URL бэкенда. При same-origin деплое — пустая строка.
         // Значение читается из config.js, который генерируется buildCommand при деплое на Render.
@@ -2106,6 +2148,9 @@
         let deferredInstallPrompt = null;
         let warmupDone = false;
         let livePointIndex = 0;
+        // Троттлинг обновления live-графика (мс)
+        let lastLiveUpdateTime = 0;
+        const LIVE_UPDATE_THROTTLE_MS = 150;
 
         const mainI18n = {
             ru: {
@@ -2739,7 +2784,11 @@
                 liveChart.data.datasets[1].data.shift();
             }
 
-            liveChart.update('none');
+            const now = Date.now();
+            if (now - lastLiveUpdateTime > LIVE_UPDATE_THROTTLE_MS) {
+                liveChart.update('none');
+                lastLiveUpdateTime = now;
+            }
         }
 
         function clearLiveChart() {
@@ -2990,15 +3039,23 @@
         }
 
         function createConfetti() {
-            for (let i = 0; i < 30; i++) {
+            if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+            const count = 8;
+            for (let i = 0; i < count; i++) {
                 const confetti = document.createElement('div');
                 confetti.className = 'confetti';
-                confetti.innerHTML = ['🎉', '🎊', '⭐', '✨', '🌟'][Math.floor(Math.random() * 5)];
+                confetti.textContent = ['🎉', '🎊', '⭐', '✨', '🌟'][Math.floor(Math.random() * 5)];
                 confetti.style.left = Math.random() * 100 + '%';
-                confetti.style.fontSize = (Math.random() * 20 + 20) + 'px';
-                confetti.style.animation = `slideUp 2s ease-out forwards`;
+                confetti.style.fontSize = (Math.random() * 14 + 16) + 'px';
+                confetti.style.transition = 'transform 1.6s ease-out, opacity 1.6s ease-out';
+                confetti.style.transform = `translateY(0)`;
                 document.body.appendChild(confetti);
-                setTimeout(() => confetti.remove(), 2000);
+                // animate via requestAnimationFrame to avoid layout thrash
+                requestAnimationFrame(() => {
+                    confetti.style.transform = 'translateY(-220px)';
+                    confetti.style.opacity = '0';
+                });
+                setTimeout(() => confetti.remove(), 1700);
             }
         }
 
@@ -3128,8 +3185,14 @@
         function switchTab(tab) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            document.getElementById(tab).classList.add('active');
-            event.target.classList.add('active');
+            const tabContent = document.getElementById(tab);
+            if (tabContent) tabContent.classList.add('active');
+            // Найдём соответствующую кнопку по id и пометим как активную
+            const btnId = tab === 'chart' ? 'tabChartBtn' : (tab === 'speed-rating' ? 'tabRatingBtn' : null);
+            if (btnId) {
+                const btn = document.getElementById(btnId);
+                if (btn) btn.classList.add('active');
+            }
             if (tab === 'chart' && chart) setTimeout(() => chart.resize(), 100);
         }
 
@@ -3914,32 +3977,10 @@
             showNotification('Приложение установлено 🎉', 'success');
         });
 
-        // Блокировка DevTools
         window.addEventListener('keydown', (event) => {
             if (event.key === 'Escape') {
                 closeSidebar();
             }
-            // F12
-            if (event.key === 'F12') {
-                event.preventDefault();
-                return false;
-            }
-            // Ctrl+Shift+I / Ctrl+Shift+J / Ctrl+Shift+C
-            if (event.ctrlKey && event.shiftKey && ['I','i','J','j','C','c'].includes(event.key)) {
-                event.preventDefault();
-                return false;
-            }
-            // Ctrl+U (просмотр исходного кода)
-            if (event.ctrlKey && ['U','u'].includes(event.key)) {
-                event.preventDefault();
-                return false;
-            }
-        });
-
-        // Блокировка правой кнопки мыши
-        document.addEventListener('contextmenu', (event) => {
-            event.preventDefault();
-            return false;
         });
 
         window.onclick = function(event) {
